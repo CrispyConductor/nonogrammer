@@ -1,0 +1,9 @@
+{
+  "name": "nonogrammer",
+  "version": "0.1.0",
+  "description": "Nonogram solver and generator",
+  "license": "BSD-2-Clause",
+  "dependencies": {
+    "objtools": "^1.6.5"
+  }
+}
