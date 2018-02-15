@@ -1,0 +1,36 @@
+.nonogramDataCell {
+	border: 1px solid grey;
+	width: 60px;
+	height: 60px;
+	text-align: center;
+	vertical-align: center;
+	font-size: 30px;
+}
+
+.nonogramTable {
+	border-collapse: collapse;
+	border: 2px solid grey;
+}
+
+.nonogramColClueCell {
+	border: 2px solid grey;
+	text-align: center;
+	vertical-align: bottom;
+}
+
+.nonogramColClue {
+	font-size: 35px;
+	color: black;
+}
+
+.nonogramRowClueCell {
+	border: 2px solid grey;
+	text-align: right;
+	vertical-align: center;
+}
+
+.nonogramRowClue {
+	font-size: 35px;
+	color: black;
+	margin: 10px;
+}
