@@ -38798,7 +38798,42 @@ module.exports = Solver;
 
 
 },{"./board":1,"objtools":156}],209:[function(require,module,exports){
+(function() {
+
 const nonogrammer = require('../index');
+
+function getURLParam(name) {
+	let res = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+	return res && res[1] && decodeURIComponent(res[1]);
+}
+
+let mode = getURLParam('mode');
+if (mode !== 'solve' && mode !== 'build') mode = 'play';
+
+function setBoardCellValue(cell, value, palette) {
+	let paletteObj = palette && palette[value === null ? 'unknown' : value];
+	if (paletteObj && paletteObj.text) {
+		cell.text(paletteObj.text);
+	} else if (!paletteObj && value === null) {
+		cell.text('?');
+	} else {
+		cell.text('');
+	}
+	if (paletteObj && paletteObj.textColor) {
+		cell.css('color', paletteObj.textColor);
+	} else if (value === null) {
+		cell.css('color', 'red');
+	} else {
+		cell.css('color', 'black');
+	}
+	if (paletteObj && paletteObj.color) {
+		cell.css('background-color', paletteObj.color);
+	} else if (value > 0) {
+		cell.css('background-color', 'black');
+	} else {
+		cell.css('background-color', 'white');
+	}
+}
 
 function makePuzzleUI(board, palette = null) {
 	let table = $('<table>').addClass('nonogramTable');
@@ -38833,27 +38868,10 @@ function makePuzzleUI(board, palette = null) {
 		}
 		rowRow.append(rowClueCell);
 		let rowData = board.getRow(rowNum);
-		for (let value of rowData) {
-			let cell = $('<td>').addClass('nonogramDataCell');
-			let paletteObj = palette && palette[value === null ? 'unknown' : value];
-			if (paletteObj && paletteObj.text) {
-				cell.text(paletteObj.text);
-			} else if (!paletteObj && value === null) {
-				cell.text('?');
-			}
-			if (paletteObj && paletteObj.textColor) {
-				cell.css('color', paletteObj.textColor);
-			} else if (value === null) {
-				cell.css('color', 'red');
-			}
-			if (paletteObj && paletteObj.color) {
-				cell.css('background-color', paletteObj.color);
-			} else if (value > 0) {
-				cell.css('background-color', 'black');
-			} else {
-				cell.css('background-color', 'white');
-			}
-			if (value === 1) cell.css('background-color', 'black');
+		for (let colNum = 0; colNum < rowData.length; colNum++) {
+			let value = rowData[colNum];
+			let cell = $('<td>').addClass('nonogramDataCell').data('row', rowNum).data('col', colNum);
+			setBoardCellValue(cell, value, palette);
 			rowRow.append(cell);
 		}
 		table.append(rowRow);
@@ -38861,13 +38879,115 @@ function makePuzzleUI(board, palette = null) {
 	return table;
 }
 
+let paletteColorSet = [ 'white', 'black', 'red', 'yellow', 'green', 'blue', 'orange', 'purple' ];
+let palette = [];
+
+function paletteSelectorAddColor() {
+	if (palette.length >= paletteColorSet.length) return;
+	let idx = palette.length;
+	palette.push({ color: paletteColorSet[idx], colorIdx: idx });
+	let colorSpan = $('<span>').addClass('nonogramPalSelBlock');
+	colorSpan.css('background-color', palette[idx].color);
+	//$('#paletteSelector').append(colorSpan);
+	//palette[idx].el = colorSpan;
+	colorSpan.click(function() {
+		palette[idx].colorIdx++;
+		if (palette[idx].colorIdx >= paletteColorSet.length) palette[idx].colorIdx = 0;
+		palette[idx].color = paletteColorSet[palette[idx].colorIdx];
+		colorSpan.css('background-color', palette[idx].color);
+	});
+	let colorSpanPadding = $('<span>').addClass('nonogramPalSelBlockPad');
+	colorSpanPadding.append(colorSpan);
+	$('#paletteSelector').append(colorSpanPadding);
+	palette[idx].el = colorSpanPadding;
+}
+
+function paletteSelectorRemoveColor() {
+	if (palette.length < 3) return;
+	palette.pop().el.remove();
+}
+
+function resetPaletteSelector() {
+	palette = [];
+	$('#paletteSelector').empty();
+	paletteSelectorAddColor();
+	paletteSelectorAddColor();
+	palette.unknown = { color: 'white' };
+}
+
+function initPaletteSelector() {
+	resetPaletteSelector();
+	$('#paletteAddButton').click(paletteSelectorAddColor);
+	$('#paletteRemoveButton').click(paletteSelectorRemoveColor);
+}
+
+function initEditBoard(board, boardEl, allowUnknown, onChange) {
+	boardEl.find('.nonogramDataCell').mousedown((event) => {
+		let el = $(event.target);
+		let row = parseInt(el.data('row'));
+		let col = parseInt(el.data('col'));
+		let value = board.get(row, col);
+		let newValue = value;
+		if (event.which === 1) {
+			// left click cycles between colors
+			if (value === null) {
+				newValue = 1;
+			} else if (value === 0 && allowUnknown) {
+				newValue = null;
+			} else {
+				newValue = value + 1;
+				if (newValue >= palette.length) {
+					newValue = 0;
+				}
+			}
+		} else if (event.which === 3) {
+			// right click toggles between unknown and blank
+			if (!allowUnknown) return;
+			if (value === null) newValue = 0;
+			else newValue = null;
+		}
+		if (newValue !== value) {
+			board.set(row, col, newValue);
+			let res = onChange(row, col, newValue, value);
+			if (res === false) {
+				board.set(row, col, value);
+			}
+			setBoardCellValue(el, board.get(row, col), palette);
+		}
+	}).on('contextmenu', () => false);
+}
+
+function initPlayMode() {
+	$('#paletteSelectorContainer').hide();
+	$('#puzzleContainer').empty();
+	let filledBoard = nonogrammer.Board.makeRandomBoard(10, 10, 2);
+	let buildResults = nonogrammer.Builder.buildPuzzleFromData(filledBoard);
+	let puzzleBoard = nonogrammer.Solver.partialCopyBoard(buildResults.board);
+	console.log('Created board solution stats: ', buildResults.stats);
+	resetPaletteSelector();
+	palette[0] = { color: 'white', textColor: 'grey', text: 'X' };
+	let maxValue = filledBoard.getMaxValue();
+	while (palette.length <= maxValue) paletteSelectorAddColor();
+	let boardEl = makePuzzleUI(puzzleBoard, palette);
+	initEditBoard(puzzleBoard, boardEl, true, (row, col) => {
+		if (buildResults.board.get(row, col) !== null) return false;
+	});
+	$('#puzzleContainer').append(boardEl);
+}
+
 $(function() {
 
-let board = nonogrammer.Board.makeRandomBoard(10, 10, 1);
+	//let board = nonogrammer.Board.makeRandomBoard(10, 10, 1);
+	//$('body').append(makePuzzleUI(board));
+	initPaletteSelector();
 
-$('body').append(makePuzzleUI(board));
+	if (mode === 'play') {
+		initPlayMode();
+	}
 
 });
+
+})();
 
 
 },{"../index":3}]},{},[209]);

@@ -1,9 +1,29 @@
 <html>
 	<head>
+		<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 		<link rel="stylesheet" href="nonogram.css">
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+		<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
 		<script src="bundle.js"></script>
 	</head>
 	<body>
+		<div id="paletteSelectorContainer">
+			<span id="paletteSelector">
+			</span>
+			<span id="paletteAddRemoveSpan">
+				<span class="nonogramPalSelButtonSpan">
+					<button id="paletteAddButton" class="ui-button ui-widget ui-corner-all ui-button-icon-only nonogramPalButton">
+						<span class="ui-icon ui-icon-plus"></span>
+					</button>
+				</span>
+				<span class="nonogramPalSelButtonSpan">
+					<button id="paletteRemoveButton" class="ui-button ui-widget ui-corner-all ui-button-icon-only nonogramPalButton">
+						<span class="ui-icon ui-icon-minusthick"></span>
+					</button>
+				</span>
+			</span>
+		</div>
+		<div id="puzzleContainer">
+		</div>
 	</body>
 </html>

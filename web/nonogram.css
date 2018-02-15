@@ -34,3 +34,37 @@
 	color: black;
 	margin: 10px;
 }
+
+.nonogramPalSelBlock {
+	width: 60px;
+	height: 60px;
+	border-style: solid;
+	border-width: 2px;
+	border-color: grey;
+	display: inline-block;
+}
+
+#paletteAddRemoveSpan {
+	display: inline-block;
+	width: 60;
+}
+
+.nonogramPalSelBlockPad {
+	margin: 3px;
+}
+
+.nonogramPalSelButtonSpan {
+	float: left;
+	display: block;
+}
+
+.nonogramPalButton {
+	width: 25;
+	height: 25;
+	margin: 3px;
+}
+
+#paletteSelectorContainer {
+	display: none;
+}
+
