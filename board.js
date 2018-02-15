@@ -1,21 +1,98 @@
-
-
+/**
+ * This class represents a puzzle board and includes the dimensions (rows and columns),
+ * clues, and cell data.  Cell data may or may not include unknowns.  Also supported
+ * are color nonograms, where each cell can contain colors other than black.
+ *
+ * Board data is accessible at the `data` property and is a single-dimensional array
+ * of data.  Accessors should be used to access elements.
+ *
+ * Dimensions are available as the `rows` and `cols` properties.
+ *
+ * Clues are accessible at the `rowClues` and `colClues` properties.  These are arrays
+ * such that the array index corresponds to the number of row or column.  0,0 is at
+ * the upper-left of the puzzle.  This array contains arrays of clue objects, where
+ * each clue object looks like `{ value: 1, run: 3 }`.  `value` represents the color of
+ * the clue, and is always 1 for black-and-white puzzles.  `run` is the count of the clue.
+ *
+ * Values in the data (and the clues) are represented as numbers.  0 is 'blank', and 1+
+ * are cell colors.  The special value `null` can be used in the data (but not in the clues)
+ * to represent an unknown cell.
+ *
+ * @class Board
+ * @constructor
+ * @param {Number} rows - Number of rows, ie, height
+ * @param {Number} cols - Number of columns, ie, width
+ */
 class Board {
 
 	constructor(rows, cols) {
 		this.rows = rows;
 		this.cols = cols;
 		this.clearData(0);
-		this.buildCluesFromData();
+		this.rowClues = [];
+		this.colClues = [];
+		for (let i = 0; i < this.rows; i++) this.rowClues.push([]);
+		for (let i = 0; i < this.cols; i++) this.colClues.push([]);
 	}
 
+	/**
+	 * Method to generate random board data.
+	 *
+	 * @method makeRandomBoard
+	 * @static
+	 * @param {Number} rows - Number of rows
+	 * @param {Number} cols - Number of columns
+	 * @param {Number} [values=1] - Number of values, 1 for black-and-white
+	 * @param {Number} [density=null] - Density of filled-in cells.  Default is to pick at random between 0.2 and 0.8 .
+	 * @return {Board}
+	 */
+	static makeRandomBoard(rows, cols, values = 1, density = null) {
+		if (density === null) density = Math.random() * 0.6 + 0.2;
+		let board = new Board(rows, cols);
+		for (let i = 0; i < board.data.length; i++) {
+			if (Math.random() < density) {
+				board.data[i] = Math.floor(Math.random() * values) + 1;
+			} else {
+				board.data[i] = 0;
+			}
+		}
+		board.buildCluesFromData();
+		return board;
+	}
+
+	/**
+	 * Fills the board data with all of the same value.
+	 *
+	 * @method clearData
+	 * @param {Number} [value=null] - Value to set
+	 */
 	clearData(value = null) {
 		this.data = [];
 		for (let i = 0; i < this.rows * this.cols; i++) this.data.push(value);
 	}
 
+	/**
+	 * Creates a string token that uniquely represents the full state of board data.
+	 *
+	 * @method makeToken
+	 */
+	makeToken() {
+		return this.data.map((x) => (x === null) ? '?' : x).join(',');
+	}
+
+	/**
+	 * Take the board data and compute the board clues from it.
+	 *
+	 * @method buildCluesFromData
+	 */
 	buildCluesFromData() {
-		this.rowClues = [];
+		let { rowClues, colClues } = this._makeCluesFromData(false);
+		this.rowClues = rowClues;
+		this.colClues = colClues;
+	}
+
+	_makeCluesFromData(includeBlanks = false) {
+		let rowClues = [];
 		for (let row = 0; row < this.rows; row++) {
 			let thisRowClues = [];
 			let lastValue = this.get(row, 0);
@@ -25,17 +102,17 @@ class Board {
 				if (value !== lastValue || col === this.cols) {
 					if (typeof lastValue !== 'number') throw new Error('Cannot build clues from unknown grid');
 					let runLength = col - startOfRun;
-					if (lastValue !== 0) {
+					if (lastValue !== 0 || includeBlanks) {
 						thisRowClues.push({ value: lastValue, run: runLength });
 					}
 					lastValue = value;
 					startOfRun = col;
 				}
 			}
-			this.rowClues.push(thisRowClues);
+			rowClues.push(thisRowClues);
 		}
 
-		this.colClues = [];
+		let colClues = [];
 		for (let col = 0; col < this.cols; col++) {
 			let thisColClues = [];
 			let lastValue = this.get(0, col);
@@ -44,15 +121,17 @@ class Board {
 				let value = (row === this.rows) ? -1 : this.get(row, col);
 				if (value !== lastValue || row === this.rows) {
 					let runLength = row - startOfRun;
-					if (lastValue !== 0) {
+					if (lastValue !== 0 || includeBlanks) {
 						thisColClues.push({ value: lastValue, run: runLength });
 					}
 					lastValue = value;
 					startOfRun = row;
 				}
 			}
-			this.colClues.push(thisColClues);
+			colClues.push(thisColClues);
 		}
+
+		return { rowClues, colClues };
 	}
 
 	// 0 is blank, 1+ are colors, null is unknown
@@ -86,7 +165,13 @@ class Board {
 		for (let i = 0; i < this.rows; i++) this.set(i, col, line[i]);
 	}
 
-	printBoard(blankStr = 'X', unknownStr = ' ') {
+	/**
+	 * Computes and returns the maximum value present across clues and data.
+	 *
+	 * @method getMaxValue()
+	 * @return {Number}
+	 */
+	getMaxValue() {
 		let maxValue = 0;
 		for (let i = 0; i < this.data.length; i++) {
 			if (typeof this.data[i] === 'number' && this.data[i] > maxValue) maxValue = this.data[i];
@@ -98,6 +183,18 @@ class Board {
 				}
 			}
 		}
+		return maxValue;
+	}
+
+	/**
+	 * Prints to the console a textual representation of this board.
+	 *
+	 * @method printBoard
+	 * @param {String} [blankStr='X'] - Character to use for blank cells
+	 * @param {String} [unknownStr=' '] - Character to use for unknown cells
+	 */
+	printBoard(blankStr = 'X', unknownStr = ' ') {
+		let maxValue = this.getMaxValue();
 
 		function clueStr(clue) {
 			if (maxValue > 1) {
