@@ -92,7 +92,13 @@ class Builder {
 		this.params = params;
 	}
 
-	// Take a difficulty from 1 to 10
+	/**
+	 * Returns the params object associated with a given difficulty level from 1-10.
+	 *
+	 * @method makeParamsFromDifficulty
+	 * @param {Number} level
+	 * @return {Object}
+	 */
 	static makeParamsFromDifficulty(level) {
 		if (level < 1) level = 1;
 		if (level < 3) {
@@ -135,9 +141,19 @@ class Builder {
 	}
 
 	/**
+	 * Checks to see if this board is solveable, and returns stats on the solution.
 	 * Returns object with solver stats if can be solved, or null if can't be solved within parameters to a unique solution.
+	 * Bails out early if the maximums specified in the parameters are hit.
+	 *
+	 * @method _trySolve
+	 * @private
+	 * @param {Board}
+	 * @return {Object}
 	 */
 	_trySolve(board) {
+		// The basic structure of this method is similar to the corresponding solver method
+
+		// Whether a solution has been found.  Used to check for multiple solutions.
 		let foundSolution = false;
 		let maxValue = board.getMaxValue();
 		let visitedSet = {};
@@ -151,7 +167,10 @@ class Builder {
 		// - Whether or not the branch ended in a solution
 		const findSolutionsFromState = (solver) => {
 
+			// Make all simple-solve steps possible
 			let simpleSolveResult = solver.simpleSolveBatch();
+
+			// Check if this branch is a dead end
 			if (simpleSolveResult.contradiction) {
 				return {
 					maxDepth: 0,
@@ -161,12 +180,15 @@ class Builder {
 				};
 			}
 
+			// Check if this branch has been visited before
 			let token = solver.board.makeToken();
 			if (visitedSet[token]) return visitedSet[token];
 
+			// Early bail if hit max total steps
 			curTotalSteps += simpleSolveResult.steps;
 			if (curTotalSteps > this.params.maxTotalSteps) throw new Error('hit max total steps');
 
+			// If the solution is complete ...
 			if (simpleSolveResult.remainingUnknowns === 0) {
 				// Make sure solution matches the desired one
 				let mismatchedIndexes = [];
@@ -203,7 +225,8 @@ class Builder {
 			let itDeadEnds = 0;
 			let itSolutionDepth;
 
-			// Iterate over unknowns and try different things
+			// Find first unknown
+			let foundUnknown = false;
 			for (let row = 0; row < solver.board.rows; row++) {
 				for (let col = 0; col < solver.board.cols; col++) {
 					let value = solver.board.get(row, col);
@@ -226,8 +249,11 @@ class Builder {
 							}
 							solver.board.set(row, col, null);
 						}
+						foundUnknown = true;
+						break;
 					}
 				}
+				if (foundUnknown) break;
 			}
 
 			let result = {
@@ -250,7 +276,14 @@ class Builder {
 		return res;
 	}
 
-
+	/**
+	 * Starts filling in random cells of the puzzle, trying to solve it, and calling
+	 * a callback for each.
+	 *
+	 * @method _tryRandomPuzzle
+	 * @private
+	 * @param {Function} puzzleCb
+	 */
 	_tryRandomPuzzle(puzzleCb) {
 		let board = Solver.partialCopyBoard(this.filledBoard);
 		board.clearData();
@@ -260,11 +293,8 @@ class Builder {
 			let tsr;
 			try {
 				tsr = this._trySolve(board);
-				//console.log(tsr);
 			} catch (ex) {
-				//console.log('Could not solve:', ex.message);
 				if (ex.mismatchedIndexes) tryIndexes = ex.mismatchedIndexes;
-				//console.log(ex, ex.stack);
 			}
 			if (tsr) {
 				let cbRet = puzzleCb(Solver.partialCopyBoard(board), tsr);
@@ -300,7 +330,6 @@ class Builder {
 				for (let i = 0; i < board.data.length; i++) {
 					if (board.data[i] === null) {
 						if (unknownCtr === unknownNo) {
-							//console.log('Filling random unknown', i);
 							board.data[i] = this.filledBoard.data[i];
 							break;
 						}
@@ -317,6 +346,15 @@ class Builder {
 		}
 	}
 
+	/**
+	 * Generate a score for how close a puzzle solution is to the target stats.
+	 *
+	 * @method _scoreStats
+	 * @private
+	 * @param {Object} stats
+	 * @param {Board} board
+	 * @return {Number}
+	 */
 	_scoreStats(stats, board) {
 		// compare stats.solutionDepth to targetSolutionDepth
 		// compare stats.deadEnds to targetDeadEnds
@@ -341,6 +379,12 @@ class Builder {
 		return scoreMSE;
 	}
 
+	/**
+	 * Builds a puzzle using the builder parameters.
+	 *
+	 * @method buildPuzzle
+	 * @return {Object}
+	 */
 	buildPuzzle() {
 		let bestScore = null;
 		let bestBoard = null;
@@ -348,11 +392,7 @@ class Builder {
 		for (let i = 0; i < this.params.numPuzzleIterations; i++) {
 			let lastScore = null;
 			this._tryRandomPuzzle((board, stats) => {
-				console.log('Possible puzzle:');
-				board.printBoard('X', ' ');
-				console.log('Stats', stats);
 				let score = this._scoreStats(stats, board);
-				console.log('Score', this._scoreStats(stats, board));
 				if (bestScore === null || score < bestScore) {
 					bestScore = score;
 					bestStats = stats;
