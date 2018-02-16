@@ -62,16 +62,15 @@
 				<button id="addColButton">+ Col</button>
 				<button id="removeColButton">- Col</button>
 			</div>
-			<!--
-			<span><h3>Change dimensions (width x height):</h3></span>
-			<form method="GET" action="nonogram.html">
-				<input type="hidden" name="mode" value="build" />
-				<span><input id="resizeWidth" type="text" name="w" value="5" /></span>
-				<span>x</span>
-				<span><input id="resizeHeight" type="text" name="h" value="5" /></span>
-				<span><input type="submit" value="New Size" /></span>
-			</form>
-			-->
+		</div>
+		<div id="generateContainer">
+			<div>
+				<span>Difficulty (1-10):</span>
+				<span><input id="generateDifficulty" type="text" value="3" /></span>
+				<span><button id="generateButton">Generate Puzzle</button></span>
+			</div>
+			<div id="generatePuzzleContainer">
+			</div>
 		</div>
 	</body>
 </html>

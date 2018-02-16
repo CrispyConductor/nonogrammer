@@ -78,3 +78,13 @@
 	margin: 5px;
 }
 
+#generateContainer {
+	display: none;
+	margin: 10px;
+}
+
+#generatePuzzleContainer {
+	margin: 10px;
+}
+
+

@@ -39204,6 +39204,16 @@ function initBuildMode() {
 		builder.board.buildCluesFromData();
 		refreshPuzzleUI(builder.board, builder.boardEl, palette);
 	});
+	$('#generateContainer').show();
+	$('#generateButton').off('click').click(() => {
+		let difficulty = parseInt($('#generateDifficulty').val());
+		if (typeof difficulty !== 'number') difficulty = 3;
+		if (difficulty < 1) difficulty = 1;
+		if (difficulty > 10) difficulty = 10;
+		let buildResult = nonogrammer.Builder.buildPuzzleFromData(builder.board, difficulty);
+		let buildResultEl = makePuzzleUI(buildResult.board, palette);
+		$('#generatePuzzleContainer').empty().append(buildResultEl);
+	});
 }
 
 function initPlayMode() {
@@ -39211,6 +39221,7 @@ function initPlayMode() {
 	$('#puzzleContainer').empty();
 	$('#solvedMessage').hide();
 	$('#resizeContainer').hide();
+	$('#generateContainer').hide();
 
 	let width = getURLParamInt('w', 5);
 	let height = getURLParamInt('h', 5);
