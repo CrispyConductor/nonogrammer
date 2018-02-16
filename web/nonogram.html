@@ -25,5 +25,30 @@
 		</div>
 		<div id="puzzleContainer">
 		</div>
+		<div id="solvedMessage" style="display:none;">
+			<div>
+				<h1>Solved!</h1>
+			</div>
+			<div>
+				<form action="GET" target="nonogram.html">
+					<table>
+						<tr>
+							<th>Width</th>
+							<th>Height</th>
+							<th>Colors</th>
+							<th>Difficulty 1-10</th>
+						</tr>
+						<tr>
+							<td><input type="text" name="w" value="5" /></td>
+							<td><input type="text" name="h" value="5" /></td>
+							<td><input type="text" name="colors" value="1" /></td>
+							<td><input type="text" name="difficulty" value="3" /></td>
+						</tr>
+					</table>
+					<div><input type="submit" value="Try Another!" /></div>
+				</form>
+				<a href="nonogram.html?mode=play">Try Another Puzzle</a>
+			</div>
+		</div>
 	</body>
 </html>

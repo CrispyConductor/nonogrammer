@@ -91,14 +91,16 @@ class Board {
 		this.colClues = colClues;
 	}
 
-	_makeCluesFromData(includeBlanks = false) {
+	_makeCluesFromData(includeBlanks = false, countUnknownAsBlank = false) {
 		let rowClues = [];
 		for (let row = 0; row < this.rows; row++) {
 			let thisRowClues = [];
 			let lastValue = this.get(row, 0);
+			if (lastValue === null && countUnknownAsBlank) lastValue = 0;
 			let startOfRun = 0;
 			for (let col = 1; col <= this.cols; col++) {
 				let value = (col === this.cols) ? -1 : this.get(row, col);
+				if (value === null && countUnknownAsBlank) value = 0;
 				if (value !== lastValue || col === this.cols) {
 					if (typeof lastValue !== 'number') throw new Error('Cannot build clues from unknown grid');
 					let runLength = col - startOfRun;
@@ -116,9 +118,11 @@ class Board {
 		for (let col = 0; col < this.cols; col++) {
 			let thisColClues = [];
 			let lastValue = this.get(0, col);
+			if (lastValue === null && countUnknownAsBlank) lastValue = 0;
 			let startOfRun = 0;
 			for (let row = 1; row <= this.rows; row++) {
 				let value = (row === this.rows) ? -1 : this.get(row, col);
+				if (value === null && countUnknownAsBlank) value = 0;
 				if (value !== lastValue || row === this.rows) {
 					let runLength = row - startOfRun;
 					if (lastValue !== 0 || includeBlanks) {
@@ -132,6 +136,50 @@ class Board {
 		}
 
 		return { rowClues, colClues };
+	}
+
+	/**
+	 * Returns true if there are no unknowns
+	 *
+	 * @method isComplete
+	 * @return {Boolean}
+	 */
+	isComplete() {
+		for (let value of this.data) {
+			if (value === null) return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Checks for a valid solution.  Returns true if valid.
+	 *
+	 * @method validate
+	 * @return {Boolean}
+	 */
+	validate(countUnknownAsBlank = false) {
+		let { rowClues, colClues } = this._makeCluesFromData(false, countUnknownAsBlank);
+		console.log('Made clues', rowClues, colClues);
+		console.log('Board clues', this.rowClues, this.colClues);
+		for (let row = 0; row < this.rows; row++) {
+			if (rowClues[row].length !== this.rowClues[row].length) return false;
+			for (let i = 0; i < rowClues[row].length; i++) {
+				if (
+					rowClues[row][i].value !== this.rowClues[row][i].value ||
+					rowClues[row][i].run !== this.rowClues[row][i].run
+				) return false;
+			}
+		}
+		for (let col = 0; col < this.cols; col++) {
+			if (colClues[col].length !== this.colClues[col].length) return false;
+			for (let i = 0; i < colClues[col].length; i++) {
+				if (
+					colClues[col][i].value !== this.colClues[col][i].value ||
+					colClues[col][i].run !== this.colClues[col][i].run
+				) return false;
+			}
+		}
+		return true;
 	}
 
 	// 0 is blank, 1+ are colors, null is unknown

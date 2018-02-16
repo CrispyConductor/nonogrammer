@@ -92,14 +92,16 @@ class Board {
 		this.colClues = colClues;
 	}
 
-	_makeCluesFromData(includeBlanks = false) {
+	_makeCluesFromData(includeBlanks = false, countUnknownAsBlank = false) {
 		let rowClues = [];
 		for (let row = 0; row < this.rows; row++) {
 			let thisRowClues = [];
 			let lastValue = this.get(row, 0);
+			if (lastValue === null && countUnknownAsBlank) lastValue = 0;
 			let startOfRun = 0;
 			for (let col = 1; col <= this.cols; col++) {
 				let value = (col === this.cols) ? -1 : this.get(row, col);
+				if (value === null && countUnknownAsBlank) value = 0;
 				if (value !== lastValue || col === this.cols) {
 					if (typeof lastValue !== 'number') throw new Error('Cannot build clues from unknown grid');
 					let runLength = col - startOfRun;
@@ -117,9 +119,11 @@ class Board {
 		for (let col = 0; col < this.cols; col++) {
 			let thisColClues = [];
 			let lastValue = this.get(0, col);
+			if (lastValue === null && countUnknownAsBlank) lastValue = 0;
 			let startOfRun = 0;
 			for (let row = 1; row <= this.rows; row++) {
 				let value = (row === this.rows) ? -1 : this.get(row, col);
+				if (value === null && countUnknownAsBlank) value = 0;
 				if (value !== lastValue || row === this.rows) {
 					let runLength = row - startOfRun;
 					if (lastValue !== 0 || includeBlanks) {
@@ -133,6 +137,50 @@ class Board {
 		}
 
 		return { rowClues, colClues };
+	}
+
+	/**
+	 * Returns true if there are no unknowns
+	 *
+	 * @method isComplete
+	 * @return {Boolean}
+	 */
+	isComplete() {
+		for (let value of this.data) {
+			if (value === null) return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Checks for a valid solution.  Returns true if valid.
+	 *
+	 * @method validate
+	 * @return {Boolean}
+	 */
+	validate(countUnknownAsBlank = false) {
+		let { rowClues, colClues } = this._makeCluesFromData(false, countUnknownAsBlank);
+		console.log('Made clues', rowClues, colClues);
+		console.log('Board clues', this.rowClues, this.colClues);
+		for (let row = 0; row < this.rows; row++) {
+			if (rowClues[row].length !== this.rowClues[row].length) return false;
+			for (let i = 0; i < rowClues[row].length; i++) {
+				if (
+					rowClues[row][i].value !== this.rowClues[row][i].value ||
+					rowClues[row][i].run !== this.rowClues[row][i].run
+				) return false;
+			}
+		}
+		for (let col = 0; col < this.cols; col++) {
+			if (colClues[col].length !== this.colClues[col].length) return false;
+			for (let i = 0; i < colClues[col].length; i++) {
+				if (
+					colClues[col][i].value !== this.colClues[col][i].value ||
+					colClues[col][i].run !== this.colClues[col][i].run
+				) return false;
+			}
+		}
+		return true;
 	}
 
 	// 0 is blank, 1+ are colors, null is unknown
@@ -38807,6 +38855,12 @@ function getURLParam(name) {
 	return res && res[1] && decodeURIComponent(res[1]);
 }
 
+function getURLParamInt(name, def) {
+	let res = getURLParam(name);
+	if (typeof res !== 'string' || res === '') return def;
+	return parseInt(res);
+}
+
 let mode = getURLParam('mode');
 if (mode !== 'solve' && mode !== 'build') mode = 'play';
 
@@ -38833,6 +38887,18 @@ function setBoardCellValue(cell, value, palette) {
 	} else {
 		cell.css('background-color', 'white');
 	}
+}
+
+function refreshPuzzleUI(board, boardElem, palette) {
+	boardElem.find('td').each(function() {
+		let el = $(this);
+		let row = el.data('row');
+		let col = el.data('col');
+		if (row !== undefined && col !== undefined) {
+			let value = board.get(row, col);
+			setBoardCellValue(el, value, palette);
+		}
+	});
 }
 
 function makePuzzleUI(board, palette = null) {
@@ -38891,6 +38957,7 @@ function paletteSelectorAddColor() {
 	//$('#paletteSelector').append(colorSpan);
 	//palette[idx].el = colorSpan;
 	colorSpan.click(function() {
+		if (idx === 0) return;
 		palette[idx].colorIdx++;
 		if (palette[idx].colorIdx >= paletteColorSet.length) palette[idx].colorIdx = 0;
 		palette[idx].color = paletteColorSet[palette[idx].colorIdx];
@@ -38957,11 +39024,22 @@ function initEditBoard(board, boardEl, allowUnknown, onChange) {
 	}).on('contextmenu', () => false);
 }
 
+function disableEditBoard(boardEl) {
+	boardEl.find('.nonogramDataCell').off('mousedown');
+}
+
 function initPlayMode() {
 	$('#paletteSelectorContainer').hide();
 	$('#puzzleContainer').empty();
-	let filledBoard = nonogrammer.Board.makeRandomBoard(10, 10, 2);
-	let buildResults = nonogrammer.Builder.buildPuzzleFromData(filledBoard);
+	$('#solvedMessage').hide();
+
+	let width = getURLParamInt('w', 5);
+	let height = getURLParamInt('h', 5);
+	let colors = getURLParamInt('colors', 1);
+	let difficulty = getURLParamInt('difficulty', 3);
+
+	let filledBoard = nonogrammer.Board.makeRandomBoard(height, width, colors);
+	let buildResults = nonogrammer.Builder.buildPuzzleFromData(filledBoard, difficulty);
 	let puzzleBoard = nonogrammer.Solver.partialCopyBoard(buildResults.board);
 	console.log('Created board solution stats: ', buildResults.stats);
 	resetPaletteSelector();
@@ -38971,6 +39049,22 @@ function initPlayMode() {
 	let boardEl = makePuzzleUI(puzzleBoard, palette);
 	initEditBoard(puzzleBoard, boardEl, true, (row, col) => {
 		if (buildResults.board.get(row, col) !== null) return false;
+		if (puzzleBoard.validate(true)) {
+			// Solved the puzzle
+			// Transform all unknowns to blanks, and update the palette
+			palette[0] = { color: 'white', text: '' };
+			for (let row = 0; row < puzzleBoard.rows; row++) {
+				for (let col = 0; col < puzzleBoard.cols; col++) {
+					let value = puzzleBoard.get(row, col);
+					if (value === null) {
+						puzzleBoard.set(row, col, 0);
+					}
+				}
+			}
+			refreshPuzzleUI(puzzleBoard, boardEl, palette);
+			disableEditBoard(boardEl);
+			$('#solvedMessage').show();
+		}
 	});
 	$('#puzzleContainer').append(boardEl);
 }

@@ -7,6 +7,12 @@ function getURLParam(name) {
 	return res && res[1] && decodeURIComponent(res[1]);
 }
 
+function getURLParamInt(name, def) {
+	let res = getURLParam(name);
+	if (typeof res !== 'string' || res === '') return def;
+	return parseInt(res);
+}
+
 let mode = getURLParam('mode');
 if (mode !== 'solve' && mode !== 'build') mode = 'play';
 
@@ -33,6 +39,18 @@ function setBoardCellValue(cell, value, palette) {
 	} else {
 		cell.css('background-color', 'white');
 	}
+}
+
+function refreshPuzzleUI(board, boardElem, palette) {
+	boardElem.find('td').each(function() {
+		let el = $(this);
+		let row = el.data('row');
+		let col = el.data('col');
+		if (row !== undefined && col !== undefined) {
+			let value = board.get(row, col);
+			setBoardCellValue(el, value, palette);
+		}
+	});
 }
 
 function makePuzzleUI(board, palette = null) {
@@ -91,6 +109,7 @@ function paletteSelectorAddColor() {
 	//$('#paletteSelector').append(colorSpan);
 	//palette[idx].el = colorSpan;
 	colorSpan.click(function() {
+		if (idx === 0) return;
 		palette[idx].colorIdx++;
 		if (palette[idx].colorIdx >= paletteColorSet.length) palette[idx].colorIdx = 0;
 		palette[idx].color = paletteColorSet[palette[idx].colorIdx];
@@ -157,11 +176,22 @@ function initEditBoard(board, boardEl, allowUnknown, onChange) {
 	}).on('contextmenu', () => false);
 }
 
+function disableEditBoard(boardEl) {
+	boardEl.find('.nonogramDataCell').off('mousedown');
+}
+
 function initPlayMode() {
 	$('#paletteSelectorContainer').hide();
 	$('#puzzleContainer').empty();
-	let filledBoard = nonogrammer.Board.makeRandomBoard(10, 10, 2);
-	let buildResults = nonogrammer.Builder.buildPuzzleFromData(filledBoard);
+	$('#solvedMessage').hide();
+
+	let width = getURLParamInt('w', 5);
+	let height = getURLParamInt('h', 5);
+	let colors = getURLParamInt('colors', 1);
+	let difficulty = getURLParamInt('difficulty', 3);
+
+	let filledBoard = nonogrammer.Board.makeRandomBoard(height, width, colors);
+	let buildResults = nonogrammer.Builder.buildPuzzleFromData(filledBoard, difficulty);
 	let puzzleBoard = nonogrammer.Solver.partialCopyBoard(buildResults.board);
 	console.log('Created board solution stats: ', buildResults.stats);
 	resetPaletteSelector();
@@ -171,6 +201,22 @@ function initPlayMode() {
 	let boardEl = makePuzzleUI(puzzleBoard, palette);
 	initEditBoard(puzzleBoard, boardEl, true, (row, col) => {
 		if (buildResults.board.get(row, col) !== null) return false;
+		if (puzzleBoard.validate(true)) {
+			// Solved the puzzle
+			// Transform all unknowns to blanks, and update the palette
+			palette[0] = { color: 'white', text: '' };
+			for (let row = 0; row < puzzleBoard.rows; row++) {
+				for (let col = 0; col < puzzleBoard.cols; col++) {
+					let value = puzzleBoard.get(row, col);
+					if (value === null) {
+						puzzleBoard.set(row, col, 0);
+					}
+				}
+			}
+			refreshPuzzleUI(puzzleBoard, boardEl, palette);
+			disableEditBoard(boardEl);
+			$('#solvedMessage').show();
+		}
 	});
 	$('#puzzleContainer').append(boardEl);
 }
