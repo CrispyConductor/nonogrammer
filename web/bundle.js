@@ -160,8 +160,6 @@ class Board {
 	 */
 	validate(countUnknownAsBlank = false) {
 		let { rowClues, colClues } = this._makeCluesFromData(false, countUnknownAsBlank);
-		console.log('Made clues', rowClues, colClues);
-		console.log('Board clues', this.rowClues, this.colClues);
 		for (let row = 0; row < this.rows; row++) {
 			if (rowClues[row].length !== this.rowClues[row].length) return false;
 			for (let i = 0; i < rowClues[row].length; i++) {
@@ -39037,6 +39035,11 @@ function initPlayMode() {
 	let height = getURLParamInt('h', 5);
 	let colors = getURLParamInt('colors', 1);
 	let difficulty = getURLParamInt('difficulty', 3);
+
+	$('#playNextWidth').val('' + width);
+	$('#playNextHeight').val('' + height);
+	$('#playNextColors').val('' + colors);
+	$('#playNextDifficulty').val('' + difficulty);
 
 	let filledBoard = nonogrammer.Board.makeRandomBoard(height, width, colors);
 	let buildResults = nonogrammer.Builder.buildPuzzleFromData(filledBoard, difficulty);

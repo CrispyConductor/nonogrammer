@@ -30,7 +30,7 @@
 				<h1>Solved!</h1>
 			</div>
 			<div>
-				<form action="GET" target="nonogram.html">
+				<form method="GET" action="nonogram.html">
 					<table>
 						<tr>
 							<th>Width</th>
@@ -39,10 +39,10 @@
 							<th>Difficulty 1-10</th>
 						</tr>
 						<tr>
-							<td><input type="text" name="w" value="5" /></td>
-							<td><input type="text" name="h" value="5" /></td>
-							<td><input type="text" name="colors" value="1" /></td>
-							<td><input type="text" name="difficulty" value="3" /></td>
+							<td><input id="playNextWidth" type="text" name="w" value="5" /></td>
+							<td><input id="playNextHeight" type="text" name="h" value="5" /></td>
+							<td><input id="playNextColors" type="text" name="colors" value="1" /></td>
+							<td><input id="playNextDifficulty" type="text" name="difficulty" value="3" /></td>
 						</tr>
 					</table>
 					<div><input type="submit" value="Try Another!" /></div>

@@ -159,8 +159,6 @@ class Board {
 	 */
 	validate(countUnknownAsBlank = false) {
 		let { rowClues, colClues } = this._makeCluesFromData(false, countUnknownAsBlank);
-		console.log('Made clues', rowClues, colClues);
-		console.log('Board clues', this.rowClues, this.colClues);
 		for (let row = 0; row < this.rows; row++) {
 			if (rowClues[row].length !== this.rowClues[row].length) return false;
 			for (let i = 0; i < rowClues[row].length; i++) {

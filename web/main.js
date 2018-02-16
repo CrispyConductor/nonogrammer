@@ -190,6 +190,11 @@ function initPlayMode() {
 	let colors = getURLParamInt('colors', 1);
 	let difficulty = getURLParamInt('difficulty', 3);
 
+	$('#playNextWidth').val('' + width);
+	$('#playNextHeight').val('' + height);
+	$('#playNextColors').val('' + colors);
+	$('#playNextDifficulty').val('' + difficulty);
+
 	let filledBoard = nonogrammer.Board.makeRandomBoard(height, width, colors);
 	let buildResults = nonogrammer.Builder.buildPuzzleFromData(filledBoard, difficulty);
 	let puzzleBoard = nonogrammer.Solver.partialCopyBoard(buildResults.board);
