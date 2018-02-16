@@ -27,6 +27,8 @@
 class Board {
 
 	constructor(rows, cols) {
+		if (rows < 2) rows = 2;
+		if (cols < 2) cols = 2;
 		this.rows = rows;
 		this.cols = cols;
 		this.clearData(0);
@@ -34,6 +36,35 @@ class Board {
 		this.colClues = [];
 		for (let i = 0; i < this.rows; i++) this.rowClues.push([]);
 		for (let i = 0; i < this.cols; i++) this.colClues.push([]);
+	}
+
+	/**
+	 * Resizes the board
+	 *
+	 * @method resize
+	 * @param {Number} newRows
+	 * @param {Number} newCols
+	 * @param {Number} defaultValue
+	 */
+	resize(newRows, newCols, defaultValue = 0) {
+		if (newRows < 2) newRows = 2;
+		if (newCols < 2) newCols = 2;
+		let newData = [];
+		for (let row = 0; row < newRows; row++) {
+			for (let col = 0; col < newCols; col++) {
+				let value;
+				if (col < this.cols && row < this.rows) {
+					value = this.get(row, col);
+				} else {
+					value = defaultValue;
+				}
+				newData[row * newCols + col] = value;
+			}
+		}
+		this.rows = newRows;
+		this.cols = newCols;
+		this.data = newData;
+		this.buildCluesFromData();
 	}
 
 	/**
@@ -38888,13 +38919,79 @@ function setBoardCellValue(cell, value, palette) {
 }
 
 function refreshPuzzleUI(board, boardElem, palette) {
+	// Update board size
+	let boardElemRows = boardElem.find('tr').length - 1;
+	let boardElemCols = boardElem.find('td').length / (boardElemRows + 1) - 1;
+	while (boardElemRows < board.rows) {
+		let newRowElem = $('<tr>');
+		let rowClueCell = $('<td>').addClass('nonogramRowClueCell').data('row', boardElemRows).data('nonoRowClue', true);
+		newRowElem.append(rowClueCell);
+		for (let col = 0; col < boardElemCols; col++) {
+			let cell = $('<td>').addClass('nonogramDataCell').data('row', boardElemRows).data('col', col).data('nonoCell', true);
+			newRowElem.append(cell);
+		}
+		boardElem.find('tr').last().after(newRowElem);
+		boardElemRows++;
+	}
+	while (boardElemRows > board.rows) {
+		boardElem.find('tr').last().remove();
+		boardElemRows--;
+	}
+	while (boardElemCols < board.cols) {
+		boardElem.find('tr').each(function(idx) {
+			let newCell = $('<td>');
+			if (idx === 0) {
+				// Clue cell
+				newCell.addClass('nonogramColClueCell').data('col', boardElemCols).data('nonoColClue', true);
+			} else {
+				// Data cell
+				newCell.addClass('nonogramDataCell').data('row', idx - 1).data('col', boardElemCols).data('nonoCell', true);
+			}
+			$(this).append(newCell);
+		});
+		boardElemCols++;
+	}
+	while (boardElemCols > board.cols) {
+		boardElem.find('tr').each(function() {
+			$(this).find('td').last().remove();
+		});
+		boardElemCols--;
+	}
+
+	// Update each of the cells
 	boardElem.find('td').each(function() {
 		let el = $(this);
 		let row = el.data('row');
 		let col = el.data('col');
-		if (row !== undefined && col !== undefined) {
+		if (row !== undefined) row = parseInt(row);
+		if (col !== undefined) col = parseInt(col);
+		let isDataCell = el.data('nonoCell');
+		let isRowClue = el.data('nonoRowClue');
+		let isColClue = el.data('nonoColClue');
+		if (row !== undefined && col !== undefined && isDataCell) {
+			// Update data cell
 			let value = board.get(row, col);
 			setBoardCellValue(el, value, palette);
+		} else if (row !== undefined && isRowClue) {
+			// Update row clue cell
+			el.empty();
+			for (let clue of board.rowClues[row]) {
+				let rowClueSpan = $('<span>').addClass('nonogramRowClue').text('' + clue.run);
+				if (palette && palette[clue.value] && palette[clue.value].color) {
+					rowClueSpan.css('color', palette[clue.value].color);
+				}
+				el.append(rowClueSpan);
+			}
+		} else if (col !== undefined && isColClue) {
+			// Update col clue cell
+			el.empty();
+			for (let clue of board.colClues[col]) {
+				let clueDiv = $('<div>').addClass('nonogramColClue').text('' + clue.run);
+				if (palette && palette[clue.value] && palette[clue.value].color) {
+					clueDiv.css('color', palette[clue.value].color);
+				}
+				el.append(clueDiv);
+			}
 		}
 	});
 }
@@ -38905,14 +39002,13 @@ function makePuzzleUI(board, palette = null) {
 	let columnClueRow = $('<tr>');
 	let topLeftSpacer = $('<td>');
 	columnClueRow.append(topLeftSpacer);
-	for (let clues of board.colClues) {
-		let colClueCell = $('<td>').addClass('nonogramColClueCell');
+	for (let colNum = 0; colNum < board.cols; colNum++) {
+		let clues = board.colClues[colNum];
+		let colClueCell = $('<td>').addClass('nonogramColClueCell').data('col', colNum).data('nonoColClue', true);
 		for (let clue of clues) {
 			let clueDiv = $('<div>').addClass('nonogramColClue').text('' + clue.run);
 			if (palette && palette[clue.value] && palette[clue.value].color) {
 				clueDiv.css('color', palette[clue.value].color);
-			} else {
-				clueDiv.css('color', 'black');
 			}
 			colClueCell.append(clueDiv);
 		}
@@ -38922,7 +39018,7 @@ function makePuzzleUI(board, palette = null) {
 	// Build other rows
 	for (let rowNum = 0; rowNum < board.rows; rowNum++) {
 		let rowRow = $('<tr>');
-		let rowClueCell = $('<td>').addClass('nonogramRowClueCell');
+		let rowClueCell = $('<td>').addClass('nonogramRowClueCell').data('row', rowNum).data('nonoRowClue', true);
 		for (let clue of board.rowClues[rowNum]) {
 			let rowClueSpan = $('<span>').addClass('nonogramRowClue').text('' + clue.run);
 			if (palette && palette[clue.value] && palette[clue.value].color) {
@@ -38934,7 +39030,7 @@ function makePuzzleUI(board, palette = null) {
 		let rowData = board.getRow(rowNum);
 		for (let colNum = 0; colNum < rowData.length; colNum++) {
 			let value = rowData[colNum];
-			let cell = $('<td>').addClass('nonogramDataCell').data('row', rowNum).data('col', colNum);
+			let cell = $('<td>').addClass('nonogramDataCell').data('row', rowNum).data('col', colNum).data('nonoCell', true);
 			setBoardCellValue(cell, value, palette);
 			rowRow.append(cell);
 		}
@@ -38946,7 +39042,7 @@ function makePuzzleUI(board, palette = null) {
 let paletteColorSet = [ 'white', 'black', 'red', 'yellow', 'green', 'blue', 'orange', 'purple' ];
 let palette = [];
 
-function paletteSelectorAddColor() {
+function paletteSelectorAddColor(onChange = null) {
 	if (palette.length >= paletteColorSet.length) return;
 	let idx = palette.length;
 	palette.push({ color: paletteColorSet[idx], colorIdx: idx });
@@ -38960,6 +39056,7 @@ function paletteSelectorAddColor() {
 		if (palette[idx].colorIdx >= paletteColorSet.length) palette[idx].colorIdx = 0;
 		palette[idx].color = paletteColorSet[palette[idx].colorIdx];
 		colorSpan.css('background-color', palette[idx].color);
+		if (onChange) onChange();
 	});
 	let colorSpanPadding = $('<span>').addClass('nonogramPalSelBlockPad');
 	colorSpanPadding.append(colorSpan);
@@ -38972,22 +39069,51 @@ function paletteSelectorRemoveColor() {
 	palette.pop().el.remove();
 }
 
-function resetPaletteSelector() {
+function resetPaletteSelector(onChange = null) {
 	palette = [];
 	$('#paletteSelector').empty();
-	paletteSelectorAddColor();
-	paletteSelectorAddColor();
+	paletteSelectorAddColor(onChange);
+	paletteSelectorAddColor(onChange);
 	palette.unknown = { color: 'white' };
 }
 
-function initPaletteSelector() {
-	resetPaletteSelector();
-	$('#paletteAddButton').click(paletteSelectorAddColor);
-	$('#paletteRemoveButton').click(paletteSelectorRemoveColor);
+function initPaletteSelector(callbacks = {}) {
+	resetPaletteSelector(callbacks.onChange);
+	$('#paletteAddButton').off('click').click(() => {
+		paletteSelectorAddColor(callbacks.onChange);
+		if (callbacks.onAdd) callbacks.onAdd();
+	});
+	$('#paletteRemoveButton').off('click').click(() => {
+		paletteSelectorRemoveColor();
+		if (callbacks.onRemove) callbacks.onRemove();
+	});
+}
+
+function initResizeSelector(board, boardEl, defaultValue = 0, resizeCb = null) {
+	$('#addRowButton').off('click').click(() => {
+		board.resize(board.rows + 1, board.cols, defaultValue);
+		refreshPuzzleUI(board, boardEl, palette);
+		if (resizeCb) resizeCb();
+	});
+	$('#removeRowButton').off('click').click(() => {
+		board.resize(board.rows - 1, board.cols, defaultValue);
+		refreshPuzzleUI(board, boardEl, palette);
+		if (resizeCb) resizeCb();
+	});
+	$('#addColButton').off('click').click(() => {
+		board.resize(board.rows, board.cols + 1, defaultValue);
+		refreshPuzzleUI(board, boardEl, palette);
+		if (resizeCb) resizeCb();
+	});
+	$('#removeColButton').off('click').click(() => {
+		board.resize(board.rows, board.cols - 1, defaultValue);
+		refreshPuzzleUI(board, boardEl, palette);
+		if (resizeCb) resizeCb();
+	});
 }
 
 function initEditBoard(board, boardEl, allowUnknown, onChange) {
-	boardEl.find('.nonogramDataCell').mousedown((event) => {
+	boardEl.find('.nonogramDataCell').off('mousedown').mousedown((event) => {
 		let el = $(event.target);
 		let row = parseInt(el.data('row'));
 		let col = parseInt(el.data('col'));
@@ -39026,10 +39152,65 @@ function disableEditBoard(boardEl) {
 	boardEl.find('.nonogramDataCell').off('mousedown');
 }
 
+function initBuilder(allowUnknown = false, editCb) {
+	$('#paletteSelectorContainer').show();
+	$('#resizeContainer').show();
+	$('#puzzleContainer').empty();
+	$('#solvedMessage').hide();
+
+	let width = getURLParamInt('w', 5);
+	let height = getURLParamInt('h', 5);
+
+	let board = new nonogrammer.Board(height, width);
+
+	let boardEl = makePuzzleUI(board, palette);
+	initEditBoard(board, boardEl, allowUnknown, editCb);
+
+	initPaletteSelector({
+		onRemove() {
+			for (let i = 0; i < board.data.length; i++) {
+				if (board.data[i] !== null && board.data[i] >= palette.length) {
+					board.data[i] = 0;
+				}
+			}
+			board.buildCluesFromData();
+			refreshPuzzleUI(board, boardEl, palette);
+		},
+		onChange() {
+			refreshPuzzleUI(board, boardEl, palette);
+		}
+	});
+	if (allowUnknown) {
+		palette[0] = { color: 'white', textColor: 'grey', text: 'X' };
+	} else {
+		palette[0] = { color: 'white' };
+	}
+
+	initResizeSelector(board, boardEl, allowUnknown ? null : 0, () => {
+		initEditBoard(board, boardEl, allowUnknown, editCb);
+	});
+
+	$('#puzzleContainer').append(boardEl);
+
+	return {
+		board,
+		boardEl
+	};
+}
+
+function initBuildMode() {
+	let builder;
+	builder = initBuilder(false, (row, col) => {
+		builder.board.buildCluesFromData();
+		refreshPuzzleUI(builder.board, builder.boardEl, palette);
+	});
+}
+
 function initPlayMode() {
 	$('#paletteSelectorContainer').hide();
 	$('#puzzleContainer').empty();
 	$('#solvedMessage').hide();
+	$('#resizeContainer').hide();
 
 	let width = getURLParamInt('w', 5);
 	let height = getURLParamInt('h', 5);
@@ -39076,10 +39257,10 @@ $(function() {
 
 	//let board = nonogrammer.Board.makeRandomBoard(10, 10, 1);
 	//$('body').append(makePuzzleUI(board));
-	initPaletteSelector();
-
 	if (mode === 'play') {
 		initPlayMode();
+	} else if (mode === 'build') {
+		initBuildMode();
 	}
 
 });

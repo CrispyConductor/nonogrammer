@@ -66,5 +66,15 @@
 
 #paletteSelectorContainer {
 	display: none;
+	margin-bottom: 20px;
+}
+
+#resizeContainer {
+	display: none;
+	margin: 20px;
+}
+
+.resizeButtonDiv {
+	margin: 5px;
 }
 

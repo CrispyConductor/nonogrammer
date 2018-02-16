@@ -26,6 +26,8 @@
 class Board {
 
 	constructor(rows, cols) {
+		if (rows < 2) rows = 2;
+		if (cols < 2) cols = 2;
 		this.rows = rows;
 		this.cols = cols;
 		this.clearData(0);
@@ -33,6 +35,35 @@ class Board {
 		this.colClues = [];
 		for (let i = 0; i < this.rows; i++) this.rowClues.push([]);
 		for (let i = 0; i < this.cols; i++) this.colClues.push([]);
+	}
+
+	/**
+	 * Resizes the board
+	 *
+	 * @method resize
+	 * @param {Number} newRows
+	 * @param {Number} newCols
+	 * @param {Number} defaultValue
+	 */
+	resize(newRows, newCols, defaultValue = 0) {
+		if (newRows < 2) newRows = 2;
+		if (newCols < 2) newCols = 2;
+		let newData = [];
+		for (let row = 0; row < newRows; row++) {
+			for (let col = 0; col < newCols; col++) {
+				let value;
+				if (col < this.cols && row < this.rows) {
+					value = this.get(row, col);
+				} else {
+					value = defaultValue;
+				}
+				newData[row * newCols + col] = value;
+			}
+		}
+		this.rows = newRows;
+		this.cols = newCols;
+		this.data = newData;
+		this.buildCluesFromData();
 	}
 
 	/**

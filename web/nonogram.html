@@ -8,20 +8,23 @@
 	</head>
 	<body>
 		<div id="paletteSelectorContainer">
-			<span id="paletteSelector">
-			</span>
-			<span id="paletteAddRemoveSpan">
-				<span class="nonogramPalSelButtonSpan">
-					<button id="paletteAddButton" class="ui-button ui-widget ui-corner-all ui-button-icon-only nonogramPalButton">
-						<span class="ui-icon ui-icon-plus"></span>
-					</button>
+			<h3>Color Palette</h3>
+			<div id="paletteSelectorRow">
+				<span id="paletteSelector">
 				</span>
-				<span class="nonogramPalSelButtonSpan">
-					<button id="paletteRemoveButton" class="ui-button ui-widget ui-corner-all ui-button-icon-only nonogramPalButton">
-						<span class="ui-icon ui-icon-minusthick"></span>
-					</button>
+				<span id="paletteAddRemoveSpan">
+					<span class="nonogramPalSelButtonSpan">
+						<button id="paletteAddButton" class="ui-button ui-widget ui-corner-all ui-button-icon-only nonogramPalButton">
+							<span class="ui-icon ui-icon-plus"></span>
+						</button>
+					</span>
+					<span class="nonogramPalSelButtonSpan">
+						<button id="paletteRemoveButton" class="ui-button ui-widget ui-corner-all ui-button-icon-only nonogramPalButton">
+							<span class="ui-icon ui-icon-minusthick"></span>
+						</button>
+					</span>
 				</span>
-			</span>
+			</div>
 		</div>
 		<div id="puzzleContainer">
 		</div>
@@ -31,6 +34,7 @@
 			</div>
 			<div>
 				<form method="GET" action="nonogram.html">
+					<input type="hidden" name="mode" value="play">
 					<table>
 						<tr>
 							<th>Width</th>
@@ -47,8 +51,27 @@
 					</table>
 					<div><input type="submit" value="Try Another!" /></div>
 				</form>
-				<a href="nonogram.html?mode=play">Try Another Puzzle</a>
 			</div>
+		</div>
+		<div id="resizeContainer">
+			<div class="resizeButtonDiv">
+				<button id="addRowButton">+ Row</button>
+				<button id="removeRowButton">- Row</button>
+			</div>
+			<div class="resizeButtonDiv">
+				<button id="addColButton">+ Col</button>
+				<button id="removeColButton">- Col</button>
+			</div>
+			<!--
+			<span><h3>Change dimensions (width x height):</h3></span>
+			<form method="GET" action="nonogram.html">
+				<input type="hidden" name="mode" value="build" />
+				<span><input id="resizeWidth" type="text" name="w" value="5" /></span>
+				<span>x</span>
+				<span><input id="resizeHeight" type="text" name="h" value="5" /></span>
+				<span><input type="submit" value="New Size" /></span>
+			</form>
+			-->
 		</div>
 	</body>
 </html>
