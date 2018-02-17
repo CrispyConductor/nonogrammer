@@ -1,6 +1,7 @@
 (function() {
 
 const nonogrammer = require('../index');
+const objtools = require('objtools');
 
 function getURLParam(name) {
 	let res = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
@@ -275,6 +276,12 @@ function disableEditBoard(boardEl) {
 	boardEl.find('.nonogramDataCell').off('mousedown');
 }
 
+function makePlayLink(board) {
+	let url = ('' + window.location).split('?')[0];
+	url += '?mode=play&puzzle=' + board.serialize();
+	return url;
+}
+
 function initBuilder(allowUnknown = false, editCb) {
 	$('#paletteSelectorContainer').show();
 	$('#resizeContainer').show();
@@ -334,7 +341,12 @@ function initBuildMode() {
 		if (difficulty < 1) difficulty = 1;
 		if (difficulty > 10) difficulty = 10;
 		let buildResult = nonogrammer.Builder.buildPuzzleFromData(builder.board, difficulty);
-		let buildResultEl = makePuzzleUI(buildResult.board, palette);
+		$('#generateLinkContainer').show();
+		$('#generateLink').attr('href', makePlayLink(buildResult.board));
+		let resultPalette = objtools.deepCopy(palette);
+		resultPalette.unknown = { color: 'white' };
+		resultPalette[0] = { color: 'white', textColor: 'grey', text: 'X' };
+		let buildResultEl = makePuzzleUI(buildResult.board, resultPalette);
 		$('#generatePuzzleContainer').empty().append(buildResultEl);
 	});
 }
@@ -346,27 +358,52 @@ function initPlayMode() {
 	$('#resizeContainer').hide();
 	$('#generateContainer').hide();
 
-	let width = getURLParamInt('w', 5);
-	let height = getURLParamInt('h', 5);
-	let colors = getURLParamInt('colors', 1);
-	let difficulty = getURLParamInt('difficulty', 3);
+	let width;
+	let height;
+	let colors;
+	let difficulty;
+
+	let puzzleParamStr = getURLParam('puzzle');
+	let puzzleParamBoard;
+
+	if (puzzleParamStr) {
+		puzzleParamBoard = nonogrammer.Board.deserialize(puzzleParamStr);
+		width = puzzleParamBoard.cols;
+		height = puzzleParamBoard.rows;
+		colors = puzzleParamBoard.getMaxValue();
+		difficulty = 3;
+	} else {
+		width = getURLParamInt('w', 5);
+		height = getURLParamInt('h', 5);
+		colors = getURLParamInt('colors', 1);
+		difficulty = getURLParamInt('difficulty', 3);
+	}
 
 	$('#playNextWidth').val('' + width);
 	$('#playNextHeight').val('' + height);
 	$('#playNextColors').val('' + colors);
 	$('#playNextDifficulty').val('' + difficulty);
 
-	let filledBoard = nonogrammer.Board.makeRandomBoard(height, width, colors);
-	let buildResults = nonogrammer.Builder.buildPuzzleFromData(filledBoard, difficulty);
-	let puzzleBoard = nonogrammer.Solver.partialCopyBoard(buildResults.board);
-	console.log('Created board solution stats: ', buildResults.stats);
+	let emptyBoard, buildResults;
+	if (puzzleParamBoard) {
+		emptyBoard = puzzleParamBoard;
+	} else {
+		let filledBoard = nonogrammer.Board.makeRandomBoard(height, width, colors);
+		buildResults = nonogrammer.Builder.buildPuzzleFromData(filledBoard, difficulty);
+		emptyBoard = buildResults.board;
+	}
+
+	let puzzleBoard = nonogrammer.Solver.partialCopyBoard(emptyBoard);
+	if (buildResults) {
+		console.log('Created board solution stats: ', buildResults.stats);
+	}
 	resetPaletteSelector();
 	palette[0] = { color: 'white', textColor: 'grey', text: 'X' };
-	let maxValue = filledBoard.getMaxValue();
+	let maxValue = emptyBoard.getMaxValue();
 	while (palette.length <= maxValue) paletteSelectorAddColor();
 	let boardEl = makePuzzleUI(puzzleBoard, palette);
 	initEditBoard(puzzleBoard, boardEl, true, (row, col) => {
-		if (buildResults.board.get(row, col) !== null) return false;
+		if (emptyBoard.get(row, col) !== null) return false;
 		if (puzzleBoard.validate(true)) {
 			// Solved the puzzle
 			// Transform all unknowns to blanks, and update the palette

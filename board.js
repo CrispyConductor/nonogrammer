@@ -384,6 +384,49 @@ class Board {
 		}
 	}
 
+	serialize() {
+		function serializeClues(lineClues) {
+			return lineClues.map((clues) => {
+				return clues.map((clue) => {
+					return `${clue.value}x${clue.run}`;
+				}).join('.');
+			}).join(',');
+		}
+		return [
+			this.rows,
+			this.cols,
+			serializeClues(this.rowClues),
+			serializeClues(this.colClues),
+			this.data.map((val) => {
+				return val === null ? 'x' : val;
+			}).join(',')
+		].join('|');
+	}
+
+	static deserialize(str) {
+		function deserializeClues(str) {
+			let lines = str.split(',');
+			return lines.map((lineStr) => {
+				if (lineStr === '') return [];
+				let clues = lineStr.split('.');
+				return clues.map((clueStr) => {
+					let clueParts = clueStr.split('x');
+					return { value: parseInt(clueParts[0]), run: parseInt(clueParts[1]) };
+				});
+			});
+		}
+		let parts = str.split('|');
+		let rows = parseInt(parts[0]);
+		let cols = parseInt(parts[1]);
+		let board = new Board(rows, cols);
+		board.rowClues = deserializeClues(parts[2]);
+		board.colClues = deserializeClues(parts[3]);
+		board.data = parts[4].split(',').map((str) => {
+			return (str === 'x') ? null : parseInt(str);
+		});
+		return board;
+	}
+
 }
 
 module.exports = Board;
