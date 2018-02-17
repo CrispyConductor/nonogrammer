@@ -2,6 +2,7 @@
 	<head>
 		<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 		<link rel="stylesheet" href="nonogram.css">
+		<script src="https://cdn.rawgit.com/ricmoo/aes-js/e27b99df/index.js"></script>
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 		<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
 		<script src="bundle.js"></script>
@@ -32,7 +33,7 @@
 		</div>
 		<div id="solvedMessage" style="display:none;">
 			<div>
-				<h1>Solved!</h1>
+				<h1 id="solvedMessageText">Solved!</h1>
 			</div>
 			<div>
 				<form method="GET" action="nonogram.html">
@@ -70,6 +71,10 @@
 				<span>Difficulty (1-10):</span>
 				<span><input id="generateDifficulty" type="text" value="3" /></span>
 				<span><button id="generateButton">Generate Puzzle</button></span>
+			</div>
+			<div id="generateMessageContainer">
+				<span>Solved message:</span>
+				<span><input id="generateMessage" type="text" /></span>
 			</div>
 			<div id="generateLinkContainer">
 				<span>Link to play:</span>

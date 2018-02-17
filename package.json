@@ -5,6 +5,7 @@
   "license": "BSD-2-Clause",
   "main": "index.js",
   "dependencies": {
+    "md5": "^2.2.1",
     "objtools": "^1.6.5"
   }
 }

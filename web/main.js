@@ -2,6 +2,7 @@
 
 const nonogrammer = require('../index');
 const objtools = require('objtools');
+const md5 = require('md5');
 
 function getURLParam(name) {
 	let res = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
@@ -311,13 +312,38 @@ function disableEditBoard(boardEl) {
 	boardEl.find('.nonogramDataCell').off('mousedown');
 }
 
-function makePlayLink(board, palette = null) {
+function boardToKey(board) {
+	let keyHex = md5(board.data.join(','));
+	let keyBytes = aesjs.utils.hex.toBytes(keyHex);
+	return keyBytes;
+}
+
+function makePlayLink(board, palette = null, solutionBoard = null) {
 	let url = ('' + window.location).split('?')[0];
 	url += '?mode=play&puzzle=' + board.serialize();
 	if (palette) {
 		url += '&palette=' + serializePalette(palette);
 	}
+	let message = $('#generateMessage').val();
+	if (message && solutionBoard) {
+		let messageBytes = aesjs.utils.utf8.toBytes(message);
+		let keyBytes = boardToKey(solutionBoard);
+		let aesCtr = new aesjs.ModeOfOperation.ctr(keyBytes);
+		let encBytes = aesCtr.encrypt(messageBytes);
+		let encHex = aesjs.utils.hex.fromBytes(encBytes);
+		url += '&msg=' + encHex;
+	}
 	return url;
+}
+
+function getSolvedMessage(board) {
+	let msgParam = getURLParam('msg');
+	if (!msgParam) return 'Solved!';
+	let encBytes = aesjs.utils.hex.toBytes(msgParam);
+	let keyBytes = boardToKey(board);
+	let aesCtr = new aesjs.ModeOfOperation.ctr(keyBytes);
+	let message = aesCtr.decrypt(encBytes);
+	return aesjs.utils.utf8.fromBytes(message);
 }
 
 function initBuilder(allowUnknown = false, editCb) {
@@ -386,7 +412,7 @@ function initBuildMode() {
 		resultPalette[0] = { color: 'white', textColor: 'grey', text: 'X' };
 
 		$('#generateLinkContainer').show();
-		$('#generateLink').attr('href', makePlayLink(buildResult.board, resultPalette));
+		$('#generateLink').attr('href', makePlayLink(buildResult.board, resultPalette, builder.board));
 		let buildResultEl = makePuzzleUI(buildResult.board, resultPalette);
 		$('#generatePuzzleContainer').empty().append(buildResultEl);
 	});
@@ -468,6 +494,7 @@ function initPlayMode() {
 			}
 			refreshPuzzleUI(puzzleBoard, boardEl, palette);
 			disableEditBoard(boardEl);
+			$('#solvedMessageText').text(getSolvedMessage(puzzleBoard));
 			$('#solvedMessage').show();
 		}
 	});
