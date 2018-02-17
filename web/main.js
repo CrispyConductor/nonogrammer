@@ -166,6 +166,41 @@ function makePuzzleUI(board, palette = null) {
 let paletteColorSet = [ 'white', 'black', 'red', 'yellow', 'green', 'blue', 'orange', 'purple' ];
 let palette = [];
 
+function serializePalette(palette) {
+	return palette.map((obj) => {
+		return [
+			obj.color || '',
+			(obj.text && obj.textColor) || '',
+			obj.text || ''
+		].join('.');
+	}).join(',');
+}
+
+function deserializePalette(str) {
+	let entries = str.split(',');
+	let palette = [];
+	for (let entryStr of entries) {
+		let o = {};
+		let parts = entryStr.split('.');
+		if (parts[0]) o.color = parts[0];
+		else o.color = 'white';
+		if (parts[1]) o.textColor = parts[1];
+		if (parts[2]) o.text = parts[2];
+		for (let idx = 0; idx < paletteColorSet.length; idx++) {
+			if (o.color === paletteColorSet[idx]) {
+				o.colorIdx = idx;
+				break;
+			}
+		}
+		if (o.colorIdx === undefined) {
+			o.colorIdx = paletteColorSet.length;
+			paletteColorSet.push(o.color);
+		}
+		palette.push(o);
+	}
+	return palette;
+}
+
 function paletteSelectorAddColor(onChange = null) {
 	if (palette.length >= paletteColorSet.length) return;
 	let idx = palette.length;
@@ -276,9 +311,12 @@ function disableEditBoard(boardEl) {
 	boardEl.find('.nonogramDataCell').off('mousedown');
 }
 
-function makePlayLink(board) {
+function makePlayLink(board, palette = null) {
 	let url = ('' + window.location).split('?')[0];
 	url += '?mode=play&puzzle=' + board.serialize();
+	if (palette) {
+		url += '&palette=' + serializePalette(palette);
+	}
 	return url;
 }
 
@@ -329,6 +367,8 @@ function initBuilder(allowUnknown = false, editCb) {
 }
 
 function initBuildMode() {
+	$('.pageTitle').text('Nonogram Puzzle Builder');
+
 	let builder;
 	builder = initBuilder(false, (row, col) => {
 		builder.board.buildCluesFromData();
@@ -341,17 +381,20 @@ function initBuildMode() {
 		if (difficulty < 1) difficulty = 1;
 		if (difficulty > 10) difficulty = 10;
 		let buildResult = nonogrammer.Builder.buildPuzzleFromData(builder.board, difficulty);
-		$('#generateLinkContainer').show();
-		$('#generateLink').attr('href', makePlayLink(buildResult.board));
 		let resultPalette = objtools.deepCopy(palette);
 		resultPalette.unknown = { color: 'white' };
 		resultPalette[0] = { color: 'white', textColor: 'grey', text: 'X' };
+
+		$('#generateLinkContainer').show();
+		$('#generateLink').attr('href', makePlayLink(buildResult.board, resultPalette));
 		let buildResultEl = makePuzzleUI(buildResult.board, resultPalette);
 		$('#generatePuzzleContainer').empty().append(buildResultEl);
 	});
 }
 
 function initPlayMode() {
+	$('.pageTitle').text('Nonogram Puzzle');
+
 	$('#paletteSelectorContainer').hide();
 	$('#puzzleContainer').empty();
 	$('#solvedMessage').hide();
@@ -399,6 +442,13 @@ function initPlayMode() {
 	}
 	resetPaletteSelector();
 	palette[0] = { color: 'white', textColor: 'grey', text: 'X' };
+
+	let paletteParamStr = getURLParam('palette');
+	if (paletteParamStr) {
+		palette = deserializePalette(paletteParamStr);
+	}
+	palette.unknown = { color: 'white' };
+
 	let maxValue = emptyBoard.getMaxValue();
 	while (palette.length <= maxValue) paletteSelectorAddColor();
 	let boardEl = makePuzzleUI(puzzleBoard, palette);
