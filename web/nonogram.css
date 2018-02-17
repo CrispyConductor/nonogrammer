@@ -16,6 +16,7 @@
 	border: 2px solid grey;
 	text-align: center;
 	vertical-align: bottom;
+	height: 25;
 }
 
 .nonogramColClue {
@@ -27,6 +28,7 @@
 	border: 2px solid grey;
 	text-align: right;
 	vertical-align: center;
+	width: 25;
 }
 
 .nonogramRowClue {
@@ -91,4 +93,6 @@
 	display: none;
 }
 
-
+#solveContainer {
+	display: none;
+}

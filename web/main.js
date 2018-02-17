@@ -272,7 +272,58 @@ function initResizeSelector(board, boardEl, defaultValue = 0, resizeCb = null) {
 	});
 }
 
-function initEditBoard(board, boardEl, allowUnknown, onChange) {
+let mouseX = 0, mouseY = 0;
+
+function initTrackMouse() {
+	$('body').mousemove(function(event) {
+		mouseX = event.pageX;
+		mouseY = event.pageY;
+	});
+}
+
+let showingEditCluePopUp = false;
+
+function editCluePopUp(lineClues, cb) {
+	if (showingEditCluePopUp) return false;
+	let inputEl = $('<input>').attr('type', 'text');
+	inputEl.css('position', 'absolute');
+	inputEl.css('top', '' + mouseY + 'px');
+	inputEl.css('left', '' + mouseX + 'px');
+
+	let initStr = lineClues.map((clue) => {
+		if (clue.value !== 1) {
+			return `${clue.run}/${clue.value}`;
+		} else {
+			return '' + clue.run;
+		}
+	}).join(' ');
+	inputEl.val(initStr);
+
+	$('body').append(inputEl);
+	inputEl.focus();
+	inputEl.on('keyup', function(event) {
+		if (event.keyCode === 13) {
+			let str = inputEl.val();
+			inputEl.remove();
+			showingEditCluePopUp = false;
+			let parts = str.split(/[^0-9\/]+/);
+			let clues = [];
+			for (let part of parts) {
+				if (part) {
+					let partParts = part.split('/');
+					let value = parseInt(partParts[1] || 1);
+					let run = parseInt(partParts[0] || 1);
+					clues.push({ value, run });
+				}
+			}
+			cb(clues);
+		}
+	});
+	showingEditCluePopUp = true;
+	return true;
+}
+
+function initEditBoard(board, boardEl, allowUnknown, allowEditClues, onChange, onClueChange = null) {
 	boardEl.find('.nonogramDataCell').off('mousedown').mousedown((event) => {
 		let el = $(event.target);
 		let row = parseInt(el.data('row'));
@@ -306,10 +357,31 @@ function initEditBoard(board, boardEl, allowUnknown, onChange) {
 			setBoardCellValue(el, board.get(row, col), palette);
 		}
 	}).on('contextmenu', () => false);
+
+	boardEl.find('.nonogramRowClueCell, .nonogramColClueCell').off('mousedown');
+	if (allowEditClues) {
+
+		boardEl.find('.nonogramRowClueCell').click(function() {
+			let rowNum = parseInt($(this).data('row'));
+			editCluePopUp(board.rowClues[rowNum] || [], (clues) => {
+				board.rowClues[rowNum] = clues;
+				console.log(rowNum, clues);
+				refreshPuzzleUI(board, boardEl, palette);
+			});
+		});
+
+		boardEl.find('.nonogramColClueCell').click(function() {
+			let colNum = parseInt($(this).data('col'));
+			editCluePopUp(board.colClues[colNum] || [], (clues) => {
+				board.colClues[colNum] = clues;
+				refreshPuzzleUI(board, boardEl, palette);
+			});
+		});
+	}
 }
 
 function disableEditBoard(boardEl) {
-	boardEl.find('.nonogramDataCell').off('mousedown');
+	boardEl.find('.nonogramDataCell, .nonogramRowClueCell, .nonogramColClueCell').off('mousedown');
 }
 
 function boardToKey(board) {
@@ -346,7 +418,7 @@ function getSolvedMessage(board) {
 	return aesjs.utils.utf8.fromBytes(message);
 }
 
-function initBuilder(allowUnknown = false, editCb) {
+function initBuilder(allowUnknown, allowEditClues, editCb, clueEditCb) {
 	$('#paletteSelectorContainer').show();
 	$('#resizeContainer').show();
 	$('#puzzleContainer').empty();
@@ -356,9 +428,10 @@ function initBuilder(allowUnknown = false, editCb) {
 	let height = getURLParamInt('h', 5);
 
 	let board = new nonogrammer.Board(height, width);
+	board.clearData(allowUnknown ? null : 0);
 
 	let boardEl = makePuzzleUI(board, palette);
-	initEditBoard(board, boardEl, allowUnknown, editCb);
+	initEditBoard(board, boardEl, allowUnknown, allowEditClues, editCb, clueEditCb);
 
 	initPaletteSelector({
 		onRemove() {
@@ -376,13 +449,16 @@ function initBuilder(allowUnknown = false, editCb) {
 	});
 	if (allowUnknown) {
 		palette[0] = { color: 'white', textColor: 'grey', text: 'X' };
+		palette.unknown = { color: 'white' };
 	} else {
 		palette[0] = { color: 'white' };
 	}
 
 	initResizeSelector(board, boardEl, allowUnknown ? null : 0, () => {
-		initEditBoard(board, boardEl, allowUnknown, editCb);
+		initEditBoard(board, boardEl, allowUnknown, allowEditClues, editCb, clueEditCb);
 	});
+
+	refreshPuzzleUI(board, boardEl, palette);
 
 	$('#puzzleContainer').append(boardEl);
 
@@ -392,11 +468,22 @@ function initBuilder(allowUnknown = false, editCb) {
 	};
 }
 
+function initSolveMode() {
+	$('.pageTitle').text('Nonogram Puzzle Solver');
+
+	let builder;
+	builder = initBuilder(true, true, (row, col) => {
+		refreshPuzzleUI(builder.board, builder.boardEl, palette);
+	});
+	$('#solveContainer').show();
+
+}
+
 function initBuildMode() {
 	$('.pageTitle').text('Nonogram Puzzle Builder');
 
 	let builder;
-	builder = initBuilder(false, (row, col) => {
+	builder = initBuilder(false, false, (row, col) => {
 		builder.board.buildCluesFromData();
 		refreshPuzzleUI(builder.board, builder.boardEl, palette);
 	});
@@ -426,6 +513,7 @@ function initPlayMode() {
 	$('#solvedMessage').hide();
 	$('#resizeContainer').hide();
 	$('#generateContainer').hide();
+	$('#solveContainer').hide();
 
 	let width;
 	let height;
@@ -478,7 +566,7 @@ function initPlayMode() {
 	let maxValue = emptyBoard.getMaxValue();
 	while (palette.length <= maxValue) paletteSelectorAddColor();
 	let boardEl = makePuzzleUI(puzzleBoard, palette);
-	initEditBoard(puzzleBoard, boardEl, true, (row, col) => {
+	initEditBoard(puzzleBoard, boardEl, true, false, (row, col) => {
 		if (emptyBoard.get(row, col) !== null) return false;
 		if (puzzleBoard.validate(true)) {
 			// Solved the puzzle
@@ -509,7 +597,11 @@ $(function() {
 		initPlayMode();
 	} else if (mode === 'build') {
 		initBuildMode();
+	} else if (mode === 'solve') {
+		initSolveMode();
 	}
+
+	initTrackMouse();
 
 });
 

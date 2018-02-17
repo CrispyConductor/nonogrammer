@@ -48,6 +48,7 @@ class Board {
 	resize(newRows, newCols, defaultValue = 0) {
 		if (newRows < 2) newRows = 2;
 		if (newCols < 2) newCols = 2;
+		let haveUnknowns = false;
 		let newData = [];
 		for (let row = 0; row < newRows; row++) {
 			for (let col = 0; col < newCols; col++) {
@@ -58,12 +59,24 @@ class Board {
 					value = defaultValue;
 				}
 				newData[row * newCols + col] = value;
+				if (value === null) haveUnknowns = true;
 			}
 		}
 		this.rows = newRows;
 		this.cols = newCols;
 		this.data = newData;
-		this.buildCluesFromData();
+		if (!haveUnknowns) {
+			this.buildCluesFromData();
+		} else {
+			this.rowClues.length = this.rows;
+			this.colClues.length = this.cols;
+			for (let row = 0; row < this.rows; row++) {
+				if (!this.rowClues[row]) this.rowClues[row] = [];
+			}
+			for (let col = 0; col < this.cols; col++) {
+				if (!this.colClues[col]) this.colClues[col] = [];
+			}
+		}
 	}
 
 	/**
