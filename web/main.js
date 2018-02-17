@@ -365,7 +365,6 @@ function initEditBoard(board, boardEl, allowUnknown, allowEditClues, onChange, o
 			let rowNum = parseInt($(this).data('row'));
 			editCluePopUp(board.rowClues[rowNum] || [], (clues) => {
 				board.rowClues[rowNum] = clues;
-				console.log(rowNum, clues);
 				refreshPuzzleUI(board, boardEl, palette);
 			});
 		});
@@ -476,6 +475,29 @@ function initSolveMode() {
 		refreshPuzzleUI(builder.board, builder.boardEl, palette);
 	});
 	$('#solveContainer').show();
+
+	$('#solveButton').off('click').click(() => {
+		let solutions;
+		try {
+			solutions = nonogrammer.Solver.findPossibleSolutions(nonogrammer.Solver.partialCopyBoard(builder.board));
+		} catch (ex) {
+			solutions = [];
+		}
+		$('#solutionsContainer').empty();
+		$('#solutionsHeader').show();
+		if (!solutions.length) {
+			$('#solutionsContainer').text('No solution.');
+		} else {
+			let solutionPalette = objtools.deepCopy(palette);
+			delete solutionPalette[0].text;
+			for (let solution of solutions) {
+				let solutionBoardUI = makePuzzleUI(solution, solutionPalette);
+				let solutionDiv = $('<div>').addClass('solutionDiv');
+				solutionDiv.append(solutionBoardUI);
+				$('#solutionsContainer').append(solutionDiv);
+			}
+		}
+	});
 
 }
 

@@ -95,4 +95,15 @@
 
 #solveContainer {
 	display: none;
+	margin: 10px;
 }
+
+#solutionsHeader {
+	display: none;
+	margin: 15px;
+}
+
+.solutionDiv {
+	margin: 10px;
+}
+
