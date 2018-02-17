@@ -469,6 +469,7 @@ function initBuilder(allowUnknown, allowEditClues, editCb, clueEditCb) {
 
 function initSolveMode() {
 	$('.pageTitle').text('Nonogram Puzzle Solver');
+	showBlurb('solve');
 
 	let builder;
 	builder = initBuilder(true, true, (row, col) => {
@@ -503,6 +504,7 @@ function initSolveMode() {
 
 function initBuildMode() {
 	$('.pageTitle').text('Nonogram Puzzle Builder');
+	showBlurb('build');
 
 	let builder;
 	builder = initBuilder(false, false, (row, col) => {
@@ -529,6 +531,7 @@ function initBuildMode() {
 
 function initPlayMode() {
 	$('.pageTitle').text('Nonogram Puzzle');
+	showBlurb('play');
 
 	$('#paletteSelectorContainer').hide();
 	$('#puzzleContainer').empty();
@@ -588,8 +591,8 @@ function initPlayMode() {
 	let maxValue = emptyBoard.getMaxValue();
 	while (palette.length <= maxValue) paletteSelectorAddColor();
 	let boardEl = makePuzzleUI(puzzleBoard, palette);
-	initEditBoard(puzzleBoard, boardEl, true, false, (row, col) => {
-		if (emptyBoard.get(row, col) !== null) return false;
+
+	function checkValid() {
 		if (puzzleBoard.validate(true)) {
 			// Solved the puzzle
 			// Transform all unknowns to blanks, and update the palette
@@ -607,8 +610,33 @@ function initPlayMode() {
 			$('#solvedMessageText').text(getSolvedMessage(puzzleBoard));
 			$('#solvedMessage').show();
 		}
+	}
+
+	initEditBoard(puzzleBoard, boardEl, true, false, (row, col) => {
+		if (emptyBoard.get(row, col) !== null) return false;
+		checkValid();
 	});
 	$('#puzzleContainer').append(boardEl);
+
+	window.solveNonogram = function() {
+		let solutions = nonogrammer.Solver.findPossibleSolutions(puzzleBoard);
+		if (!solutions.length) {
+			alert('No solution');
+			return;
+		}
+		for (let i = 0; i < puzzleBoard.data.length; i++) {
+			puzzleBoard.data[i] = solutions[0].data[i];
+		}
+		refreshPuzzleUI(puzzleBoard, boardEl, palette);
+		checkValid();
+	};
+}
+
+function showBlurb(mode) {
+	$('#pageBlurbPlay, #pageBlurbBuild, #pageBlurbSolve').hide();
+	if (mode === 'play') $('#pageBlurbPlay').show();
+	else if (mode === 'build') $('#pageBlurbBuild').show();
+	else if (mode === 'solve') $('#pageBlurbSolve').show();
 }
 
 $(function() {

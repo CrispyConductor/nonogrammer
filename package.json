@@ -4,8 +4,14 @@
   "description": "Nonogram solver and generator",
   "license": "BSD-2-Clause",
   "main": "index.js",
+  "scripts": {
+    "browserify": "./node_modules/.bin/browserify web/main.js -o web/bundle.js"
+  },
   "dependencies": {
     "md5": "^2.2.1",
     "objtools": "^1.6.5"
+  },
+  "devDependencies": {
+    "browserify": "^16.1.0"
   }
 }

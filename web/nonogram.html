@@ -10,6 +10,32 @@
 	</head>
 	<body>
 		<h1 class="pageTitle"></h1>
+		<div class="pageBlurb">
+			<div id="pageBlurbPlay">
+				This is a <a href="https://en.wikipedia.org/wiki/Nonogram">nonogram puzzle</a>.  Click
+				on puzzle cells to toggle between blank and color(s).  Right click to mark a cell with
+				an X indicating that it's definitely blank.  The puzzle will automatically recognize
+				when solved.
+			</div>
+			<div id="pageBlurbBuild">
+				This is a <a href="https://en.wikipedia.org/wiki/Nonogram">nonogram</a> builder.  Click
+				on cells in the grid to toggle between colors.  Once you have created your desired configuration,
+				select the desired puzzle difficult, and click 'Generate Puzzle'.  This will display the
+				generated puzzle, guaranteed to have a single solution and be solvable within the selected
+				difficulty level.  It will also generate a link that can be given to others to solve.  This
+				link can optionally include a hidden message, encrypted such that it can only be decoded when
+				the puzzle is solved.
+
+				Multi-color puzzles can be created by adding colors to the palette.  Clicking on colors in
+				the palette changes the color.
+			</div>
+			<div id="pageBlurbSolve">
+				This is a <a href="https://en.wikipedia.org/wiki/Nonogram">nonogram</a> solver.  Click on
+				the empty clue spaces to specify clues.  A text box pops up.  Clues should be listed
+				space-separated.  Colored clues can be specified with "clue/colornumber".  Colors are numbered
+				starting from 1 (normally black).  Cells can also be prefilled as definitely known or definitely a color.
+			</div>
+		</div>
 		<div id="paletteSelectorContainer">
 			<h3>Color Palette</h3>
 			<div id="paletteSelectorRow">
