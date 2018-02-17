@@ -11,3 +11,5 @@ project.sublime-project
 project.sublime-workspace
 /test*.js
 *.swp
+web/bundle.js
+
