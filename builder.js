@@ -34,6 +34,8 @@ const Solver = require('./solver');
  * - numPuzzleIterations - The builder will try this number of random puzzle configurations, and
  *     pick the one that most optimally fits the targets.  This can be set to 1 to use the first
  *     random puzzle selected.
+ * - simpleSolveCrossLines - Whether to allow the simple solver to take into account partially
+ *     known cells.
  *
  * @class Builder
  * @constructor
@@ -84,7 +86,8 @@ class Builder {
 			targetSolutionDepth: 3,
 			targetDeadEnds: 2,
 			targetTotalSteps: 300,
-			numPuzzleIterations: 10
+			numPuzzleIterations: 10,
+			simpleSolveCrossLines: true
 		};
 		for (let key in defaultParams) {
 			if (params[key] === undefined || params[key] === null) params[key] = defaultParams[key];
@@ -111,7 +114,8 @@ class Builder {
 				targetSolutionDepth: 0,
 				targetDeadEnds: 0,
 				targetTotalSteps: level * 10,
-				numPuzzleIterations: 2
+				numPuzzleIterations: 2,
+				simpleSolveCrossLines: false
 			};
 		} else if (level < 5) {
 			return {
@@ -123,7 +127,8 @@ class Builder {
 				targetSolutionDepth: 0,
 				targetDeadEnds: 0,
 				targetTotalSteps: (level - 2) * 100,
-				numPuzzleIterations: 2
+				numPuzzleIterations: 2,
+				simpleSolveCrossLines: true
 			};
 		} else {
 			return {
@@ -135,7 +140,8 @@ class Builder {
 				targetSolutionDepth: level - 4,
 				targetDeadEnds: (level - 4) * 2,
 				targetTotalSteps: level * 100,
-				numPuzzleIterations: 2
+				numPuzzleIterations: 2,
+				simpleSolveCrossLines: true
 			};
 		}
 	}
@@ -171,7 +177,7 @@ class Builder {
 		const findSolutionsFromState = (solver) => {
 
 			// Make all simple-solve steps possible
-			let simpleSolveResult = solver.simpleSolveBatch();
+			let simpleSolveResult = solver.simpleSolveBatch(this.params.simpleSolveCrossLines);
 
 			// Check if this branch is a dead end
 			if (simpleSolveResult.contradiction) {

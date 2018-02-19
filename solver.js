@@ -126,13 +126,14 @@ class Solver {
 	 * @method simpleSolveBatch
 	 * @return {Object}
 	 */
-	simpleSolveBatch() {
+	simpleSolveBatch(simpleSolveCrossLines = true) {
+		let maxValue = this.board.getMaxValue();
 		let numSteps = 0;
 		for (;;) {
 			let solvedOne = false;
 			for (let row = 0; row < this.board.rows; row++) {
 				let line = this.board.getRow(row);
-				let res = Solver.simpleSolveLine(line, this.board.rowClues[row]);
+				let res = Solver.simpleSolveLine(line, this.board.rowClues[row], maxValue, simpleSolveCrossLines);
 				if (res === null) {
 					return {
 						steps: numSteps,
@@ -147,7 +148,7 @@ class Solver {
 			}
 			for (let col = 0; col < this.board.cols; col++) {
 				let line = this.board.getCol(col);
-				let res = Solver.simpleSolveLine(line, this.board.colClues[col]);
+				let res = Solver.simpleSolveLine(line, this.board.colClues[col], maxValue, simpleSolveCrossLines);
 				if (res === null) {
 					return {
 						steps: numSteps,
@@ -183,9 +184,10 @@ class Solver {
 	 * @method simpleSolveLine
 	 * @param {Number[]} line - The row or column value array.  This is updated in-place with discovered values.
 	 * @param {Object[]} clues - Array of clue objects for the row/col, each containing { value: X, run: Y }
+	 * @param {Boolean} [simpleSolveCrossLines=true] - Whether to take into account partially know cells; increases difficulty
 	 * @return {Number[]|Null}
 	 */
-	static simpleSolveLine(line, clues) {
+	static simpleSolveLine(line, clues, boardMaxValue, simpleSolveCrossLines = true) {
 		// Make sure  line contains at least one unknown
 		let earlyCheckUnknowns = false;
 		for (let value of line) {
@@ -195,6 +197,15 @@ class Solver {
 			}
 		}
 		if (!earlyCheckUnknowns) return [ 0, 0 ];
+
+		if (!simpleSolveCrossLines) {
+			// Remove any partially known cells
+			for (let i = 0; i < line.length; i++) {
+				if (Array.isArray(line[i]) && line[i].length > 1) {
+					line[i] = null;
+				}
+			}
+		}
 
 		// Find all valid solutions for this line, and tabulate which cells are the same across all solutions for this line
 
@@ -209,12 +220,18 @@ class Solver {
 		}
 
 		// Given a value, returns an array of possible values for that cell
-		function toKnownArray(value) {
+		function toKnownArray(value, useWholeBoardMax = false) {
 			if (Array.isArray(value)) return value;
 			if (value === null) {
-				let r = deepCopy(lineValues);
-				r.push(0);
-				return r;
+				if (useWholeBoardMax) {
+					let r = [];
+					for (let i = 0; i <= boardMaxValue; i++) r.push(i);
+					return r;
+				} else {
+					let r = deepCopy(lineValues);
+					r.push(0);
+					return r;
+				}
 			}
 			return [ value ];
 		}
@@ -452,10 +469,10 @@ class Solver {
 		let numUnknowns = 0;
 		for (let i = 0; i < knownCells.length; i++) {
 			let knownPossibleValues = toKnownArray(knownCells[i]).length;
-			let linePossibleValues = toKnownArray(line[i]).length;
+			let linePossibleValues = toKnownArray(line[i], true).length;
+			
 			if (
-				knownPossibleValues < linePossibleValues ||
-				(line[i] === null && knownPossibleValues === 1)
+				knownPossibleValues < linePossibleValues
 			) {
 				line[i] = knownCells[i];
 				numSolved++;

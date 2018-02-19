@@ -17,6 +17,6 @@ board.data = [
 ];
 
 
-let res = Builder.buildPuzzleFromData(board);
+let res = Builder.buildPuzzleFromData(board, 9);
 res.board.printBoard();
 
