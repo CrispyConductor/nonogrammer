@@ -15,6 +15,19 @@ function getURLParamInt(name, def) {
 	return parseInt(res);
 }
 
+function updatePageLayout() {
+	let maxTableWidth = 300;
+	$('.nonogramTable').each(function() {
+		if ($(this).is(':visible')) {
+			if ($(this).width() > maxTableWidth) {
+				maxTableWidth = $(this).width();
+			}
+		}
+	});
+	maxTableWidth += 50;
+	$('#pageContainer').css('width', '' + maxTableWidth + 'px');
+}
+
 let mode = getURLParam('mode');
 if (mode !== 'solve' && mode !== 'build') mode = 'play';
 
@@ -285,7 +298,7 @@ let showingEditCluePopUp = false;
 
 function editCluePopUp(lineClues, cb) {
 	if (showingEditCluePopUp) return false;
-	let inputEl = $('<input>').attr('type', 'text');
+	let inputEl = $('<input>').attr('type', 'text').attr('size', '20');
 	inputEl.css('position', 'absolute');
 	inputEl.css('top', '' + mouseY + 'px');
 	inputEl.css('left', '' + mouseX + 'px');
@@ -441,9 +454,11 @@ function initBuilder(allowUnknown, allowEditClues, editCb, clueEditCb) {
 			}
 			board.buildCluesFromData();
 			refreshPuzzleUI(board, boardEl, palette);
+			updatePageLayout();
 		},
 		onChange() {
 			refreshPuzzleUI(board, boardEl, palette);
+			updatePageLayout();
 		}
 	});
 	if (allowUnknown) {
@@ -455,11 +470,14 @@ function initBuilder(allowUnknown, allowEditClues, editCb, clueEditCb) {
 
 	initResizeSelector(board, boardEl, allowUnknown ? null : 0, () => {
 		initEditBoard(board, boardEl, allowUnknown, allowEditClues, editCb, clueEditCb);
+		updatePageLayout();
 	});
 
 	refreshPuzzleUI(board, boardEl, palette);
 
 	$('#puzzleContainer').append(boardEl);
+
+	updatePageLayout();
 
 	return {
 		board,
@@ -474,7 +492,8 @@ function initSolveMode() {
 	let builder;
 	builder = initBuilder(true, true, (row, col) => {
 		refreshPuzzleUI(builder.board, builder.boardEl, palette);
-	});
+		updatePageLayout();
+	}, () => updatePageLayout());
 	$('#solveContainer').show();
 
 	$('#solveButton').off('click').click(() => {
@@ -498,8 +517,10 @@ function initSolveMode() {
 				$('#solutionsContainer').append(solutionDiv);
 			}
 		}
+		updatePageLayout();
 	});
 
+	updatePageLayout();
 }
 
 function initBuildMode() {
@@ -510,6 +531,7 @@ function initBuildMode() {
 	builder = initBuilder(false, false, (row, col) => {
 		builder.board.buildCluesFromData();
 		refreshPuzzleUI(builder.board, builder.boardEl, palette);
+		updatePageLayout();
 	});
 	$('#generateContainer').show();
 	$('#generateButton').off('click').click(() => {
@@ -527,7 +549,9 @@ function initBuildMode() {
 		let buildResultEl = makePuzzleUI(buildResult.board, resultPalette);
 		$('#generatePuzzleContainer').empty().append(buildResultEl);
 		console.log('Built puzzle stats', buildResult.stats);
+		updatePageLayout();
 	});
+	updatePageLayout();
 }
 
 function initPlayMode() {
@@ -618,6 +642,7 @@ function initPlayMode() {
 		checkValid();
 	});
 	$('#puzzleContainer').append(boardEl);
+	updatePageLayout();
 
 	window.solveNonogram = function() {
 		let solutions = nonogrammer.Solver.findPossibleSolutions(puzzleBoard);

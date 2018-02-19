@@ -8,7 +8,7 @@
 		<script src="bundle.js"></script>
 		<title class="pageTitle"></title>
 	</head>
-	<body>
+	<body><div id="pageContainer">
 		<h1 class="pageTitle"></h1>
 		<div class="pageBlurbContainer">
 			<div id="pageBlurbPlay" class="pageBlurb">
@@ -30,9 +30,12 @@
 			</div>
 			<div id="pageBlurbBuild" class="pageBlurb">
 				<p>
-					This is a <a href="https://en.wikipedia.org/wiki/Nonogram">nonogram</a> builder.  Click
+					This is a <a href="https://en.wikipedia.org/wiki/Nonogram">nonogram</a> builder.
+					It allows you to create a solution image, and the builder will generate a puzzle that will
+					result in that image.
+					Click
 					on cells in the grid to toggle between colors.  Once you have created your desired configuration,
-					select the desired puzzle difficult, and click 'Generate Puzzle'.  This will display the
+					select the desired puzzle difficulty, and click 'Generate Puzzle'.  This will display the
 					generated puzzle, guaranteed to have a single solution and be solvable within the selected
 					difficulty level.  It will also generate a link that can be given to others to solve.  This
 					link can optionally include a hidden message, encrypted such that it can only be decoded when
@@ -88,10 +91,10 @@
 							<th>Difficulty 1-10</th>
 						</tr>
 						<tr>
-							<td><input id="playNextWidth" type="text" name="w" value="5" /></td>
-							<td><input id="playNextHeight" type="text" name="h" value="5" /></td>
-							<td><input id="playNextColors" type="text" name="colors" value="1" /></td>
-							<td><input id="playNextDifficulty" type="text" name="difficulty" value="3" /></td>
+							<td><input id="playNextWidth" type="text" name="w" value="5" size="3" /></td>
+							<td><input id="playNextHeight" type="text" name="h" value="5" size="3" /></td>
+							<td><input id="playNextColors" type="text" name="colors" value="1" size="3" /></td>
+							<td><input id="playNextDifficulty" type="text" name="difficulty" value="3" size="3" /></td>
 						</tr>
 					</table>
 					<div><input type="submit" value="Try Another!" /></div>
@@ -111,12 +114,12 @@
 		<div id="generateContainer">
 			<div>
 				<span>Difficulty (1-10):</span>
-				<span><input id="generateDifficulty" type="text" value="3" /></span>
+				<span><input id="generateDifficulty" type="text" value="3" size="3" /></span>
 				<span><button id="generateButton">Generate Puzzle</button></span>
 			</div>
 			<div id="generateMessageContainer">
 				<span>Solved message:</span>
-				<span><input id="generateMessage" type="text" /></span>
+				<span><input id="generateMessage" type="text" size="20" /></span>
 			</div>
 			<div id="generateLinkContainer">
 				<span>Link to play:</span>
@@ -133,5 +136,5 @@
 			<div id="solutionsContainer">
 			</div>
 		</div>
-	</body>
+	</div></body>
 </html>

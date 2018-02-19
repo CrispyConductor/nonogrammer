@@ -1,3 +1,12 @@
+#pageContainer {
+	margin: auto;
+	min-width: 300px;
+}
+
+.pageTitle {
+	text-align: center;
+}
+
 .nonogramDataCell {
 	border: 1px solid grey;
 	width: 60px;
@@ -10,6 +19,7 @@
 .nonogramTable {
 	border-collapse: collapse;
 	border: 2px solid grey;
+	margin: auto;
 }
 
 .nonogramColClueCell {
@@ -113,5 +123,6 @@
 
 .pageBlurb {
 	display: none;
+	width: 400px;
 }
 
