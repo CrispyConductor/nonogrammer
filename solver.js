@@ -373,7 +373,7 @@ class Solver {
 				if (clueIdx === clues.length - 1) {
 					let remainingCellsBlank = true;
 					for (let i = pos + clue.run; i < length; i++) {
-						if (valueSetContains(line[i], 0)) { remainingCellsBlank = false; break; }
+						if (!valueSetContains(line[i], 0)) { remainingCellsBlank = false; break; }
 						curLine[i] = 0;
 					}
 					if (!remainingCellsBlank) {
@@ -451,7 +451,12 @@ class Solver {
 		let numSolved = 0;
 		let numUnknowns = 0;
 		for (let i = 0; i < knownCells.length; i++) {
-			if (toKnownArray(knownCells[i]).length < toKnownArray(line[i]).length) {
+			let knownPossibleValues = toKnownArray(knownCells[i]).length;
+			let linePossibleValues = toKnownArray(line[i]).length;
+			if (
+				knownPossibleValues <= linePossibleValues ||
+				(line[i] === null && knownPossibleValues === linePossibleValues)
+			) {
 				line[i] = knownCells[i];
 				numSolved++;
 			}
