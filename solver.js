@@ -36,6 +36,10 @@ class Solver {
 		// Contains a set of Board tokens that have been explored to avoid recomputing earlier paths.
 		let visitedSet = {};
 
+		// Array of all possible cell values
+		let allPossibleValues = [];
+		for (let i = 0; i <= maxValue; i++) allPossibleValues.push(i);
+
 		// Number of solver iterations so far
 		let iterations = 0;
 
@@ -65,9 +69,10 @@ class Solver {
 			for (let row = 0; row < solver.board.rows; row++) {
 				for (let col = 0; col < solver.board.cols; col++) {
 					let value = solver.board.get(row, col);
-					if (value === null) {
+					if (value === null || Array.isArray(value)) {
 						// Set the cell value to each possible value and recurse, checking for solutions along each path
-						for (let possibleValue = 0; possibleValue <= maxValue; possibleValue++) {
+						let possibleValues = (value === null) ? allPossibleValues : value;
+						for (let possibleValue of possibleValues) {
 							solver.board.set(row, col, possibleValue);
 							findSolutionsFromState(solver.partialDup(), depth + 1);
 							solver.board.set(row, col, null);
@@ -173,6 +178,7 @@ class Solver {
 	 *
 	 * The return value is either `null` (indicating there are no valid line solutions), or
 	 * an array in the form [ numNewlySolvedCells, numRemainingUnknownCells ]
+	 * This function may transform some `null` elements into arrays of possible values.
 	 *
 	 * @method simpleSolveLine
 	 * @param {Number[]} line - The row or column value array.  This is updated in-place with discovered values.
@@ -180,11 +186,93 @@ class Solver {
 	 * @return {Number[]|Null}
 	 */
 	static simpleSolveLine(line, clues) {
+		// Make sure  line contains at least one unknown
+		let earlyCheckUnknowns = false;
+		for (let value of line) {
+			if (value === null || (Array.isArray(value) && value.length > 1)) {
+				earlyCheckUnknowns = true;
+				break;
+			}
+		}
+		if (!earlyCheckUnknowns) return [ 0, 0 ];
+
 		// Find all valid solutions for this line, and tabulate which cells are the same across all solutions for this line
 
 		// Array of cell values matching the line length containing cell values that are the same across all line solutions
 		let knownCells = null;
 		let length = line.length;
+
+		// Make a set of all the values in the line clues
+		let lineValues = [];
+		for (let clue of clues) {
+			if (lineValues.indexOf(clue.value) < 0) lineValues.push(clue.value);
+		}
+
+		// Given a value, returns an array of possible values for that cell
+		function toKnownArray(value) {
+			if (Array.isArray(value)) return value;
+			if (value === null) {
+				let r = deepCopy(lineValues);
+				r.push(0);
+				return r;
+			}
+			return [ value ];
+		}
+
+		// Scalar array intersection
+		function intersection(ar1, ar2) {
+			let ret = [];
+			for (let el of ar1) {
+				if (ar2.indexOf(el) >= 0) {
+					ret.push(el);
+				}
+			}
+			return ret;
+		}
+
+		// Checks to see if 2 sets of values are the same
+		function valueSetsEqual(a, b) {
+			if (!Array.isArray(a) && !Array.isArray(b)) return a === b;
+			if (!Array.isArray(a)) a = [ a ];
+			if (!Array.isArray(b)) b = [ b ];
+			if (a.length !== b.length) return false;
+			for (let el of a) {
+				if (b.indexOf(el) < 0) return false;
+			}
+			return true;
+		}
+
+		// Checks if the 'set' possible value set wholly contains the 'otherSet'
+		function valueSetContains(set, otherSet) {
+			if (set === null) return true; // unknown values can be anything
+			set = toKnownArray(set);
+			otherSet = toKnownArray(otherSet);
+			for (let el of otherSet) {
+				if (set.indexOf(el) < 0) return false;
+			}
+			return true;
+		}
+
+		// Remove el from set
+		function valueSetRemove(set, el) {
+			set = toKnownArray(set);
+			let idx = set.indexOf(el);
+			if (idx >= 0) {
+				set.splice(idx, 1);
+			}
+			return set;
+		}
+
+		function union(a, b) {
+			let res = [];
+			for (let el of a) {
+				if (res.indexOf(el) < 0) res.push(el);
+			}
+			for (let el of b) {
+				if (res.indexOf(el) < 0) res.push(el);
+			}
+			return res;
+		}
 
 		// Given a valid line solution, compares it to `knownCells` and updates `knownCells` with all cells that are the same
 		function trackPossibleLineSolution(curLine) {
@@ -193,7 +281,10 @@ class Solver {
 				return;
 			}
 			for (let i = 0; i < curLine.length; i++) {
-				if (curLine[i] !== knownCells[i]) knownCells[i] = null;
+				let cur = curLine[i];
+				let known = knownCells[i];
+				if (cur === known) continue;
+				knownCells[i] = union(toKnownArray(cur), toKnownArray(known));
 			}
 		}
 
@@ -213,12 +304,16 @@ class Solver {
 			// Iterate through all possible clue positions in this line
 			let clue = clues[clueIdx];
 			for (let pos = nextPossibleCluePos; pos < length; pos++) {
-				if (line[pos] === 0) {
+				if (valueSetsEqual(line[pos], 0)) {
 					// We already know this is a space, so the run can't start here, but might start the next iteration.
 					curLine[pos] = 0;
 					continue;
 				}
-				if (line[pos] !== null && line[pos] !== clue.value) {
+				if (!valueSetContains(line[pos], clue.value)) {
+					if (valueSetContains(line[pos], 0)) {
+						curLine[pos] = 0;
+						continue;
+					}
 					// Clue position is of a value different from the clue.  Run can't start here, or later on.
 					break;
 				}
@@ -232,13 +327,9 @@ class Solver {
 				let curCheckPos;
 				let foundDefiniteNonBlank = false;
 				for (curCheckPos = pos; curCheckPos < pos + clue.run; curCheckPos++) {
-					// Make sure this spot either matches the clue or is unknown
-					if (line[curCheckPos] !== null && line[curCheckPos] !== 0) {
-						foundDefiniteNonBlank = true;
-						if (line[curCheckPos] !== clue.value) break;
-					} else if (line[curCheckPos] === 0) {
-						break;
-					}
+					// Make sure this clue fits the known values of this spot
+					if (!valueSetContains(line[curCheckPos], 0)) foundDefiniteNonBlank = true;
+					if (!valueSetContains(line[curCheckPos], clue.value)) break;
 				}
 				// If we found an incompatibility ...
 				if (curCheckPos !== pos + clue.run) {
@@ -248,7 +339,7 @@ class Solver {
 					if (foundDefiniteNonBlank) {
 						break;
 					}
-					// Otherwise, we hit a blank, so skip past those blanks
+					// Otherwise, we hit a string of potential blanks, and the only possibly solution is if they are all blanks
 					// Update curLine to prepare for skipping ahead
 					for (let i = pos; i <= curCheckPos; i++) {
 						curLine[i] = 0;
@@ -260,9 +351,9 @@ class Solver {
 				}
 
 				// Next cell must be at end of line, or different value (including blank or unknown).
-				if (pos + clue.run < length && line[pos + clue.run] === clue.value) {
-					// Can continue if this position is unknown
-					if (line[pos] === null) {
+				if (pos + clue.run < length && valueSetsEqual(line[pos + clue.run], clue.value)) {
+					// Can continue if starting pos can be blank
+					if (valueSetContains(line[pos], 0)) {
 						curLine[pos] = 0;
 						continue;
 					} else {
@@ -270,16 +361,22 @@ class Solver {
 					}
 				}
 
+				// Remove this clue's value from the next cell's potential value set
+				if (pos + clue.run < length) {
+					// Remove this clue's value from the next cell's potential value set
+					curLine[pos + clue.run] = valueSetRemove(curLine[pos + clue.run], clue.value);
+				}
+
 				// If this is the last clue, ensure all remaining cells are blank or unknown
 				if (clueIdx === clues.length - 1) {
 					let remainingCellsBlank = true;
 					for (let i = pos + clue.run; i < length; i++) {
-						if (line[i] !== null && line[i] !== 0) { remainingCellsBlank = false; break; }
+						if (valueSetContains(line[i], 0)) { remainingCellsBlank = false; break; }
 						curLine[i] = 0;
 					}
 					if (!remainingCellsBlank) {
 						// We can advance if starting position is unknown (could be blank)
-						if (line[pos] === null) {
+						if (valueSetContains(line[pos], 0)) {
 							curLine[pos] = 0;
 							continue;
 						} else {
@@ -295,9 +392,9 @@ class Solver {
 					}
 					// Ensure the next clue is a different value, or there is a space in between
 					if (clues[clueIdx + 1].value === clue.value) {
-						if (line[pos + clue.run] !== null && line[pos + clue.run] !== 0) {
+						if (!valueSetContains(line[pos + clue.run], 0)) {
 							// We can advance if starting position is unknown (could be blank)
-							if (line[pos] === null) {
+							if (valueSetContains(line[pos], 0)) {
 								curLine[pos] = 0;
 								continue;
 							} else {
@@ -331,7 +428,7 @@ class Solver {
 				}
 
 				// We can continue if the starting cell is unknown
-				if (line[pos] === null) {
+				if (valueSetContains(line[pos], 0)) {
 					curLine[pos] = 0;
 					continue;
 				} else {
@@ -347,18 +444,31 @@ class Solver {
 		if (!knownCells) return null;
 
 		// Find the number of newly solved cells and remaining unknown cells
+		// A "solved" cell here is any cell whose value set has been reduced
+		// An unknown is any cell who has a value set length > 1
 		let numSolved = 0;
 		let numUnknowns = 0;
 		for (let i = 0; i < knownCells.length; i++) {
-			if (knownCells[i] !== line[i]) {
-				if (line[i] !== null) {
-					// Should never happen
-					throw new Error('Valid line solution contradicts line?');
-				}
+			if (toKnownArray(knownCells[i]).length < toKnownArray(line[i]).length) {
 				line[i] = knownCells[i];
 				numSolved++;
 			}
-			if (line[i] === null) numUnknowns++;
+			if (!valueSetContains(line[i], knownCells[i])) {
+				// Should never happen
+				throw new Error('Valid line solution contradicts line?');
+			}
+			if (toKnownArray(line[i]).length !== 1) numUnknowns++;
+		}
+
+		// Simplify value sets of 1 element
+		for (let i = 0; i < line.length; i++) {
+			if (Array.isArray(line[i])) {
+				if (line[i].length === 1) {
+					line[i] = line[i][0];
+				} else if (line[i].length === lineValues.length + 1) {
+					line[i] = null;
+				}
+			}
 		}
 
 		return [ numSolved, numUnknowns ];

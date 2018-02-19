@@ -1,3 +1,5 @@
+const deepCopy = require('objtools').deepCopy;
+
 /**
  * This class represents a puzzle board and includes the dimensions (rows and columns),
  * clues, and cell data.  Cell data may or may not include unknowns.  Also supported
@@ -121,7 +123,14 @@ class Board {
 	 * @method makeToken
 	 */
 	makeToken() {
-		return this.data.map((x) => (x === null) ? '?' : x).join(',');
+		function valToken(val) {
+			if (val === null) return 'x';
+			if (Array.isArray(val)) {
+				return val.join('|');
+			}
+			return '' + val;
+		}
+		return this.data.map(valToken).join(',');
 	}
 
 	/**
@@ -227,12 +236,12 @@ class Board {
 	// 0 is blank, 1+ are colors, null is unknown
 	get(row, col) {
 		if (row >= this.rows || col >= this.cols) throw new Error('Out of bounds');
-		return this.data[row * this.cols + col];
+		return deepCopy(this.data[row * this.cols + col]);
 	}
 
 	set(row, col, value) {
 		if (row >= this.rows || col >= this.cols) throw new Error('Out of bounds');
-		this.data[row * this.cols + col] = value;
+		this.data[row * this.cols + col] = deepCopy(value);
 	}
 
 	getRow(row) {
@@ -265,6 +274,11 @@ class Board {
 		let maxValue = 0;
 		for (let i = 0; i < this.data.length; i++) {
 			if (typeof this.data[i] === 'number' && this.data[i] > maxValue) maxValue = this.data[i];
+			else if (Array.isArray(this.data[i])) {
+				for (let possibleValue of this.data[i]) {
+					if (possibleValue > maxValue) maxValue = possibleValue;
+				}
+			}
 		}
 		for (let clues of [ this.rowClues, this.colClues ]) {
 			for (let rcClues of clues) {
