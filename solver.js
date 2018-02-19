@@ -470,12 +470,16 @@ class Solver {
 		for (let i = 0; i < knownCells.length; i++) {
 			let knownPossibleValues = toKnownArray(knownCells[i]).length;
 			let linePossibleValues = toKnownArray(line[i], true).length;
+			let countsAsSolved = knownPossibleValues < linePossibleValues;
+			if (!simpleSolveCrossLines) {
+				countsAsSolved = knownPossibleValues === 1 && linePossibleValues > 1;
+			}
 			
-			if (
-				knownPossibleValues < linePossibleValues
-			) {
-				line[i] = knownCells[i];
+			if (countsAsSolved) {
 				numSolved++;
+			}
+			if (countsAsSolved || knownPossibleValues < linePossibleValues) {
+				line[i] = knownCells[i];
 			}
 			if (!valueSetContains(line[i], knownCells[i])) {
 				// Should never happen
@@ -489,7 +493,7 @@ class Solver {
 			if (Array.isArray(line[i])) {
 				if (line[i].length === 1) {
 					line[i] = line[i][0];
-				} else if (line[i].length === lineValues.length + 1) {
+				} else if (line[i].length === boardMaxValue + 1) {
 					line[i] = null;
 				}
 			}
