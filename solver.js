@@ -454,8 +454,8 @@ class Solver {
 			let knownPossibleValues = toKnownArray(knownCells[i]).length;
 			let linePossibleValues = toKnownArray(line[i]).length;
 			if (
-				knownPossibleValues <= linePossibleValues ||
-				(line[i] === null && knownPossibleValues === linePossibleValues)
+				knownPossibleValues < linePossibleValues ||
+				(line[i] === null && knownPossibleValues === 1)
 			) {
 				line[i] = knownCells[i];
 				numSolved++;

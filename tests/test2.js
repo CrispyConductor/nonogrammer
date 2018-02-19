@@ -18,5 +18,5 @@ board.data = [
 
 
 let res = Builder.buildPuzzleFromData(board);
-res.printBoard();
+res.board.printBoard();
 
