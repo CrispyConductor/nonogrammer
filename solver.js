@@ -265,6 +265,8 @@ class Solver {
 
 		function union(a, b) {
 			let res = [];
+			a = toKnownArray(a);
+			b = toKnownArray(b);
 			for (let el of a) {
 				if (res.indexOf(el) < 0) res.push(el);
 			}
