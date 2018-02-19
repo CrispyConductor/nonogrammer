@@ -75,7 +75,7 @@ class Solver {
 						for (let possibleValue of possibleValues) {
 							solver.board.set(row, col, possibleValue);
 							findSolutionsFromState(solver.partialDup(), depth + 1);
-							solver.board.set(row, col, null);
+							solver.board.set(row, col, value);
 						}
 						return;
 					}

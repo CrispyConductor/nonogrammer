@@ -158,6 +158,9 @@ class Builder {
 		let maxValue = board.getMaxValue();
 		let visitedSet = {};
 
+		let allPossibleValues = [];
+		for (let i = 0; i <= maxValue; i++) allPossibleValues.push(i);
+
 		let numBranches = 0;
 		let curTotalSteps = 0;
 
@@ -230,9 +233,10 @@ class Builder {
 			for (let row = 0; row < solver.board.rows; row++) {
 				for (let col = 0; col < solver.board.cols; col++) {
 					let value = solver.board.get(row, col);
-					if (value === null) {
+					if (value === null || Array.isArray(value)) {
 						// Try it with this unknown being each of the possible values
-						for (let possibleValue = 0; possibleValue <= maxValue; possibleValue++) {
+						let possibleValues = (value === null) ? allPossibleValues : value;
+						for (let possibleValue of possibleValues) {
 							solver.board.set(row, col, possibleValue);
 							let res = findSolutionsFromState(solver.partialDup());
 							if (res.solution) {
@@ -247,7 +251,7 @@ class Builder {
 								if (res.steps > this.params.maxDeadEndSteps) throw new Error('hit max dead end steps');
 								if (!res.cached) itDeadEnds++;
 							}
-							solver.board.set(row, col, null);
+							solver.board.set(row, col, value);
 						}
 						foundUnknown = true;
 						break;
