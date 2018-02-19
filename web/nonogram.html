@@ -10,30 +10,46 @@
 	</head>
 	<body>
 		<h1 class="pageTitle"></h1>
-		<div class="pageBlurb">
-			<div id="pageBlurbPlay">
-				This is a <a href="https://en.wikipedia.org/wiki/Nonogram">nonogram puzzle</a>.  Click
-				on puzzle cells to toggle between blank and color(s).  Right click to mark a cell with
-				an X indicating that it's definitely blank.  The puzzle will automatically recognize
-				when solved.
+		<div class="pageBlurbContainer">
+			<div id="pageBlurbPlay" class="pageBlurb">
+				<p>
+					This is a <a href="https://en.wikipedia.org/wiki/Nonogram">nonogram puzzle</a>.  The
+					goal of the puzzle is to fill in the cells of the grid to match the clues for each row
+					and column.  Each clue represents a sequence of adjacent cells of the same color.
+					Each sequence of cells must be separated by at least 1 blank space (or, for multi-color
+					puzzles, may either be separated by a blank space or must be different colored sequences).
+					More detailed rules are explained at <a href="https://en.wikipedia.org/wiki/Nonogram">
+					the Wikipedia article</a>.
+				</p>
+				<p>
+					To solve the puzzle, click on cells to toggle between filled and blank (or colors, for
+					multi-colored puzzles).  Cells can also be marked with an 'X', to indicate that the cell
+					is definitely blank, by right-clicking.  The puzzle will automatically detect when solved
+					and may display a secret message if one was included with the puzzle.
+				</p>
 			</div>
-			<div id="pageBlurbBuild">
-				This is a <a href="https://en.wikipedia.org/wiki/Nonogram">nonogram</a> builder.  Click
-				on cells in the grid to toggle between colors.  Once you have created your desired configuration,
-				select the desired puzzle difficult, and click 'Generate Puzzle'.  This will display the
-				generated puzzle, guaranteed to have a single solution and be solvable within the selected
-				difficulty level.  It will also generate a link that can be given to others to solve.  This
-				link can optionally include a hidden message, encrypted such that it can only be decoded when
-				the puzzle is solved.
-
-				Multi-color puzzles can be created by adding colors to the palette.  Clicking on colors in
-				the palette changes the color.
+			<div id="pageBlurbBuild" class="pageBlurb">
+				<p>
+					This is a <a href="https://en.wikipedia.org/wiki/Nonogram">nonogram</a> builder.  Click
+					on cells in the grid to toggle between colors.  Once you have created your desired configuration,
+					select the desired puzzle difficult, and click 'Generate Puzzle'.  This will display the
+					generated puzzle, guaranteed to have a single solution and be solvable within the selected
+					difficulty level.  It will also generate a link that can be given to others to solve.  This
+					link can optionally include a hidden message, encrypted such that it can only be decoded when
+					the puzzle is solved.
+				</p>
+				<p>
+					Multi-color puzzles can be created by adding colors to the palette.  Clicking on colors in
+					the palette changes the color.
+				</p>
 			</div>
-			<div id="pageBlurbSolve">
-				This is a <a href="https://en.wikipedia.org/wiki/Nonogram">nonogram</a> solver.  Click on
-				the empty clue spaces to specify clues.  A text box pops up.  Clues should be listed
-				space-separated.  Colored clues can be specified with "clue/colornumber".  Colors are numbered
-				starting from 1 (normally black).  Cells can also be prefilled as definitely known or definitely a color.
+			<div id="pageBlurbSolve" class="pageBlurb">
+				<p>
+					This is a <a href="https://en.wikipedia.org/wiki/Nonogram">nonogram</a> solver.  Click on
+					the empty clue spaces to specify clues.  A text box pops up.  Clues should be listed
+					space-separated.  Colored clues can be specified with "clue/colornumber".  Colors are numbered
+					starting from 1 (normally black).  Cells can also be prefilled as definitely known or definitely a color.
+				</p>
 			</div>
 		</div>
 		<div id="paletteSelectorContainer">

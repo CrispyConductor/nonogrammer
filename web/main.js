@@ -526,6 +526,7 @@ function initBuildMode() {
 		$('#generateLink').attr('href', makePlayLink(buildResult.board, resultPalette, builder.board));
 		let buildResultEl = makePuzzleUI(buildResult.board, resultPalette);
 		$('#generatePuzzleContainer').empty().append(buildResultEl);
+		console.log('Built puzzle stats', buildResult.stats);
 	});
 }
 
@@ -633,7 +634,7 @@ function initPlayMode() {
 }
 
 function showBlurb(mode) {
-	$('#pageBlurbPlay, #pageBlurbBuild, #pageBlurbSolve').hide();
+	$('.pageBlurb').hide();
 	if (mode === 'play') $('#pageBlurbPlay').show();
 	else if (mode === 'build') $('#pageBlurbBuild').show();
 	else if (mode === 'solve') $('#pageBlurbSolve').show();
