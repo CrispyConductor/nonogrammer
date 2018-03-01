@@ -9,11 +9,11 @@
 
 .nonogramDataCell {
 	border: 1px solid grey;
-	width: 60px;
-	height: 60px;
+	width: 30px;
+	height: 30px;
 	text-align: center;
 	vertical-align: center;
-	font-size: 30px;
+	font-size: 15px;
 }
 
 .nonogramTable {
@@ -26,11 +26,11 @@
 	border: 2px solid grey;
 	text-align: center;
 	vertical-align: bottom;
-	height: 25;
+	height: 20px;
 }
 
 .nonogramColClue {
-	font-size: 35px;
+	font-size: 20px;
 	color: black;
 }
 
@@ -38,13 +38,13 @@
 	border: 2px solid grey;
 	text-align: right;
 	vertical-align: center;
-	width: 25;
+	width: 20;
 }
 
 .nonogramRowClue {
-	font-size: 35px;
+	font-size: 20px;
 	color: black;
-	margin: 10px;
+	margin: 7px;
 }
 
 .nonogramPalSelBlock {
@@ -58,7 +58,7 @@
 
 #paletteAddRemoveSpan {
 	display: inline-block;
-	width: 60;
+	width: 40;
 }
 
 .nonogramPalSelBlockPad {
