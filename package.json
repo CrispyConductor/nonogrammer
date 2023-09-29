@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "md5": "^2.2.1",
-    "objtools": "^1.6.5"
+    "objtools": "^4.0.0"
   },
   "devDependencies": {
     "browserify": "^16.1.0"
